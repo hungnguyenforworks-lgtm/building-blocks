@@ -2,6 +2,7 @@ import { Base } from "@/types/game";
 import { AircraftStatusBadge } from "./StatusBadge";
 import { Fuel, Users, Wrench, Package } from "lucide-react";
 import { useState } from "react";
+import { motion } from "framer-motion";
 
 interface BaseOverviewProps {
   base: Base;
