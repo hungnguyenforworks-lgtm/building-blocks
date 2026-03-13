@@ -38,11 +38,11 @@ const SVG_ZONES: {
   colorFill: string;
   colorBorder: string;
 }[] = [
-  { id: "runway",     x: 60,  y: 150, w: 780, h: 60,  label: "✈️  STARTA UPPDRAG",    colorFill: "rgba(22,163,74,0.35)",  colorBorder: "#16a34a" },
-  { id: "hangar",     x: 60,  y: 318, w: 195, h: 128, label: "🔧  UNDERHÅLL / SERVICE", colorFill: "rgba(217,119,6,0.35)",  colorBorder: "#d97706" },
-  { id: "spareparts", x: 200, y: 40,  w: 130, h: 70,  label: "📦  SNABB LRU-REP",      colorFill: "rgba(234,88,12,0.35)",  colorBorder: "#ea580c" },
-  { id: "fuel",       x: 280, y: 318, w: 110, h: 72,  label: "⛽  TANKNING",            colorFill: "rgba(5,150,105,0.35)",  colorBorder: "#059669" },
-  { id: "ammo",       x: 430, y: 318, w: 130, h: 40,  label: "💣  BEVÄPNING",           colorFill: "rgba(220,38,38,0.35)",  colorBorder: "#dc2626" },
+  { id: "runway",     x: 60,  y: 148, w: 780, h: 62,  label: "✈️  STARTA UPPDRAG",    colorFill: "rgba(215,171,58,0.30)",  colorBorder: "#D7AB3A" },
+  { id: "hangar",     x: 60,  y: 318, w: 195, h: 128, label: "🔧  UNDERHÅLL / SERVICE", colorFill: "rgba(12,35,76,0.30)",    colorBorder: "#0C234C" },
+  { id: "spareparts", x: 200, y: 40,  w: 130, h: 70,  label: "📦  SNABB LRU-REP",      colorFill: "rgba(217,25,46,0.25)",   colorBorder: "#D9192E" },
+  { id: "fuel",       x: 280, y: 318, w: 110, h: 72,  label: "⛽  TANKNING",            colorFill: "rgba(12,35,76,0.25)",    colorBorder: "#0C234C" },
+  { id: "ammo",       x: 430, y: 318, w: 130, h: 40,  label: "💣  BEVÄPNING",           colorFill: "rgba(217,25,46,0.25)",   colorBorder: "#D9192E" },
 ];
 
 function getZoneAt(x: number, y: number): DropZone | null {
@@ -52,12 +52,12 @@ function getZoneAt(x: number, y: number): DropZone | null {
   return null;
 }
 
-// Aircraft status colours — MC = SAAB Blue
+// Aircraft status colours — SAAB palette
 const AC_COLOR: Record<Aircraft["status"], string> = {
-  mission_capable: "#005AA0",
-  on_mission: "#2563eb",
-  maintenance: "#d97706",
-  not_mission_capable: "#dc2626",
+  mission_capable: "#0C234C",
+  on_mission: "#1a4a8a",
+  maintenance: "#D7AB3A",
+  not_mission_capable: "#D9192E",
 };
 
 const AC_LABEL: Record<Aircraft["status"], string> = {
@@ -69,12 +69,11 @@ const AC_LABEL: Record<Aircraft["status"], string> = {
 
 // Plane silhouette color = remaining-life battery indicator
 function getAircraftColor(ac: Aircraft): string {
-  if (ac.status === "maintenance") return "#d97706";
-  if (ac.status === "not_mission_capable") return "#dc2626";
-  // MC and on_mission: colour encodes hoursToService
-  if (ac.hoursToService <= 20) return "#dc2626";
-  if (ac.hoursToService < 50) return "#d97706";
-  return "#16a34a";
+  if (ac.status === "maintenance") return "#D7AB3A";
+  if (ac.status === "not_mission_capable") return "#D9192E";
+  if (ac.hoursToService <= 20) return "#D9192E";
+  if (ac.hoursToService < 50) return "#D7AB3A";
+  return "#0C234C";
 }
 
 // Reusable Gripen top-down silhouette, facing LEFT (nose at cx-x), centered at (cx,cy)
