@@ -86,6 +86,35 @@ function getAircraftColor(ac: Aircraft): string {
   return "#0C234C";
 }
 
+const RUNWAY_CENTER = { x: 450, y: 179 };
+const TOWER_PRIMARY = { x: 420, y: 126, w: 24, h: 56 };
+const TOWER_SECONDARY = { x: 628, y: 136, w: 22, h: 50 };
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function frac(value: number) {
+  return value - Math.floor(value);
+}
+
+function seeded(index: number, salt: number) {
+  return frac(Math.sin(index * 127.1 + salt * 311.7) * 43758.5453);
+}
+
+function getPatternPath(index: number, total: number) {
+  const lane = (index % 4) * 10;
+  const rx = 250 + lane;
+  const ry = 92 + lane * 0.4;
+  const cx = RUNWAY_CENTER.x;
+  const cy = RUNWAY_CENTER.y;
+  const startX = clamp(cx + rx, 30, 870);
+  const startY = clamp(cy, 50, 450);
+  const leftX = clamp(cx - rx, 30, 870);
+  const leftY = clamp(cy, 50, 450);
+  return `M ${startX} ${startY} A ${rx} ${ry} 0 0 1 ${leftX} ${leftY} A ${rx} ${ry} 0 0 1 ${startX} ${startY}`;
+}
+
 export function BaseMap({ base, onDropAircraft, onUtfallOutcome }: BaseMapProps) {
   const [selected, setSelected] = useState<BuildingId>(null);
   const [hoveredAc, setHoveredAc] = useState<string | null>(null);
@@ -102,6 +131,9 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome }: BaseMapProps)
   const nmc = base.aircraft.filter((a) => a.status === "unavailable");
   const maint = base.aircraft.filter((a) => a.status === "under_maintenance");
   const onMission = base.aircraft.filter((a) => a.status === "on_mission");
+  const collisionAircraft = base.aircraft;
+  const collisionAnchor = { x: RUNWAY_CENTER.x, y: RUNWAY_CENTER.y - 8 };
+  const collisionDurBase = 7.6;
 
   function toggle(id: BuildingId) {
     setSelected((prev) => (prev === id ? null : id));
@@ -220,6 +252,30 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome }: BaseMapProps)
               fill={i < 2 ? "#D9192E" : "#ffffff"} opacity="0.9" />
           ))}
 
+          {/* ── Runway towers (center) ── */}
+          <g>
+            <rect x={TOWER_PRIMARY.x} y={TOWER_PRIMARY.y} width={TOWER_PRIMARY.w} height={TOWER_PRIMARY.h} rx="2" fill="#2a3140" stroke="#D7AB3A" strokeWidth="0.8" />
+            <rect x={TOWER_PRIMARY.x - 6} y={TOWER_PRIMARY.y - 10} width={TOWER_PRIMARY.w + 12} height="10" rx="2" fill="#3a4355" stroke="#D7AB3A" strokeWidth="0.6" />
+            <rect x={TOWER_PRIMARY.x + 6} y={TOWER_PRIMARY.y + 8} width={TOWER_PRIMARY.w - 12} height="30" rx="1" fill="#0C234C" opacity="0.6" />
+            {[0, 1, 2, 3].map((i) => (
+              <rect key={`tower-win-${i}`} x={TOWER_PRIMARY.x + 4 + i * 5} y={TOWER_PRIMARY.y + 16} width="4" height="6" rx="0.6" fill="#D7AB3A" opacity="0.7" />
+            ))}
+            <circle cx={TOWER_PRIMARY.x + TOWER_PRIMARY.w / 2} cy={TOWER_PRIMARY.y - 12} r="3" fill="#D9192E">
+              <animate attributeName="opacity" values="1;0.2;1" dur="1.1s" repeatCount="indefinite" />
+            </circle>
+          </g>
+          <g>
+            <rect x={TOWER_SECONDARY.x} y={TOWER_SECONDARY.y} width={TOWER_SECONDARY.w} height={TOWER_SECONDARY.h} rx="2" fill="#2a3140" stroke="#7aaef0" strokeWidth="0.7" />
+            <rect x={TOWER_SECONDARY.x - 5} y={TOWER_SECONDARY.y - 8} width={TOWER_SECONDARY.w + 10} height="8" rx="2" fill="#3a4355" stroke="#7aaef0" strokeWidth="0.5" />
+            <rect x={TOWER_SECONDARY.x + 5} y={TOWER_SECONDARY.y + 7} width={TOWER_SECONDARY.w - 10} height="26" rx="1" fill="#0C234C" opacity="0.6" />
+            {[0, 1, 2].map((i) => (
+              <rect key={`tower2-win-${i}`} x={TOWER_SECONDARY.x + 4 + i * 5} y={TOWER_SECONDARY.y + 14} width="4" height="6" rx="0.6" fill="#7aaef0" opacity="0.7" />
+            ))}
+            <circle cx={TOWER_SECONDARY.x + TOWER_SECONDARY.w / 2} cy={TOWER_SECONDARY.y - 10} r="2.5" fill="#7aaef0">
+              <animate attributeName="opacity" values="1;0.3;1" dur="1.6s" repeatCount="indefinite" />
+            </circle>
+          </g>
+
           {/* ── On-mission aircraft rendered ON the runway ── */}
           {onMission.slice(0, 10).map((ac, i) => {
             const rx = 95 + i * 75;
@@ -243,6 +299,152 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome }: BaseMapProps)
               </g>
             );
           })}
+
+          {/* ── Toy-plane collisions: dynamic head-on crashes across the map ── */}
+          <g style={{ pointerEvents: "none" }}>
+            {Array.from({ length: Math.ceil(collisionAircraft.length / 2) }).map((_, pairIndex) => {
+              const left = collisionAircraft[pairIndex * 2];
+              const right = collisionAircraft[pairIndex * 2 + 1] ?? collisionAircraft[0];
+              if (!left || !right) return null;
+
+              const impact = {
+                x: clamp(collisionAnchor.x + (seeded(pairIndex, 1) - 0.5) * 220, 120, 780),
+                y: clamp(collisionAnchor.y + (seeded(pairIndex, 2) - 0.5) * 140, 90, 330),
+              };
+              const angle = seeded(pairIndex, 3) * Math.PI * 2;
+              const dist = 250 + seeded(pairIndex, 4) * 90;
+              const vec = { x: Math.cos(angle) * dist, y: Math.sin(angle) * dist };
+              const startLeft = {
+                x: clamp(impact.x + vec.x, 40, 860),
+                y: clamp(impact.y + vec.y, 60, 440),
+              };
+              const startRight = {
+                x: clamp(impact.x - vec.x, 40, 860),
+                y: clamp(impact.y - vec.y, 60, 440),
+              };
+              const perp = { x: -vec.y, y: vec.x };
+              const driftLeft = {
+                x: clamp(impact.x + perp.x * 0.22, 60, 840),
+                y: clamp(impact.y + perp.y * 0.22, 70, 430),
+              };
+              const driftRight = {
+                x: clamp(impact.x - perp.x * 0.22, 60, 840),
+                y: clamp(impact.y - perp.y * 0.22, 70, 430),
+              };
+              const duration = collisionDurBase + seeded(pairIndex, 5) * 2.2;
+              const delay = seeded(pairIndex, 6) * 2.4;
+              const leftDeg = ((angle + Math.PI) * 180) / Math.PI;
+              const rightDeg = (angle * 180) / Math.PI;
+              const wobble = 4 + seeded(pairIndex, 7) * 4;
+              const coreSize = 9 + seeded(pairIndex, 8) * 6;
+
+              return (
+                <g key={`collision-pair-${left.id}`}>
+                  <g opacity="0.96">
+                    <animateTransform
+                      attributeName="transform"
+                      type="translate"
+                      dur={`${duration}s`}
+                      repeatCount="indefinite"
+                      keyTimes="0;0.55;0.7;1"
+                      values={`${startLeft.x} ${startLeft.y}; ${impact.x} ${impact.y}; ${driftLeft.x} ${driftLeft.y}; ${startLeft.x} ${startLeft.y}`}
+                      begin={`${delay}s`}
+                    />
+                    <animateTransform
+                      attributeName="transform"
+                      type="rotate"
+                      additive="sum"
+                      dur={`${duration}s`}
+                      repeatCount="indefinite"
+                      keyTimes="0;0.55;0.7;1"
+                      values={`${leftDeg - wobble};${leftDeg + wobble};${leftDeg + wobble * 2};${leftDeg - wobble}`}
+                      begin={`${delay}s`}
+                    />
+                    <AircraftShape cx={0} cy={0} color="#0C234C" type={left.type} scale={0.96} />
+                    <line x1="12" y1="-3" x2="22" y2="-3" stroke="#D7AB3A" strokeWidth="0.8" opacity="0.7" />
+                    <line x1="12" y1="3" x2="22" y2="3" stroke="#D7AB3A" strokeWidth="0.8" opacity="0.7" />
+                  </g>
+
+                  <g opacity="0.96">
+                    <animateTransform
+                      attributeName="transform"
+                      type="translate"
+                      dur={`${duration}s`}
+                      repeatCount="indefinite"
+                      keyTimes="0;0.55;0.7;1"
+                      values={`${startRight.x} ${startRight.y}; ${impact.x} ${impact.y}; ${driftRight.x} ${driftRight.y}; ${startRight.x} ${startRight.y}`}
+                      begin={`${delay}s`}
+                    />
+                    <animateTransform
+                      attributeName="transform"
+                      type="rotate"
+                      additive="sum"
+                      dur={`${duration}s`}
+                      repeatCount="indefinite"
+                      keyTimes="0;0.55;0.7;1"
+                      values={`${rightDeg + wobble};${rightDeg - wobble};${rightDeg - wobble * 2};${rightDeg + wobble}`}
+                      begin={`${delay}s`}
+                    />
+                    <AircraftShape cx={0} cy={0} color="#1a4a8a" type={right.type} scale={0.96} />
+                    <line x1="12" y1="-3" x2="22" y2="-3" stroke="#D7AB3A" strokeWidth="0.8" opacity="0.7" />
+                    <line x1="12" y1="3" x2="22" y2="3" stroke="#D7AB3A" strokeWidth="0.8" opacity="0.7" />
+                  </g>
+
+                  {/* Explosion + smoke */}
+                  <g transform={`translate(${impact.x} ${impact.y})`}>
+                    <g opacity="0">
+                      <animate attributeName="opacity" values="0;0;1;0" keyTimes="0;0.5;0.7;1" dur={`${duration}s`} repeatCount="indefinite" begin={`${delay}s`} />
+                      <animateTransform attributeName="transform" type="scale" values="0.2;1.2;0.7" keyTimes="0;0.7;1" dur={`${duration}s`} repeatCount="indefinite" begin={`${delay}s`} />
+                      <circle cx="0" cy="0" r={coreSize} fill="#ffb347" />
+                      <circle cx="-6" cy="-4" r={coreSize * 0.6} fill="#ff6a3d" />
+                      <circle cx="7" cy="5" r={coreSize * 0.5} fill="#ffd166" />
+                      <polygon points="0,-16 4,-6 16,0 4,6 0,16 -4,6 -16,0 -4,-6" fill="#ff8c42" opacity="0.9" />
+                    </g>
+
+                    <circle cx="0" cy="0" r="2" fill="none" stroke="#ffe29a" strokeWidth="1" opacity="0">
+                      <animate attributeName="r" values="2;28" keyTimes="0;1" dur={`${duration}s`} repeatCount="indefinite" begin={`${delay}s`} />
+                      <animate attributeName="opacity" values="0;0;0.9;0" keyTimes="0;0.5;0.7;1" dur={`${duration}s`} repeatCount="indefinite" begin={`${delay}s`} />
+                    </circle>
+
+                    <g opacity="0">
+                      <animate attributeName="opacity" values="0;0;1;0" keyTimes="0;0.5;0.8;1" dur={`${duration}s`} repeatCount="indefinite" begin={`${delay}s`} />
+                      <animateTransform attributeName="transform" type="translate" values="0 0; 0 -6; 0 -20" keyTimes="0;0.6;1" dur={`${duration}s`} repeatCount="indefinite" begin={`${delay}s`} />
+                      <circle cx="-10" cy="-6" r="6" fill="#2a3140" opacity="0.5" />
+                      <circle cx="10" cy="-2" r="5" fill="#1f2430" opacity="0.45" />
+                      <circle cx="0" cy="-14" r="7" fill="#1a1f2b" opacity="0.35" />
+                    </g>
+
+                    <g opacity="0">
+                      <animate attributeName="opacity" values="0;0;1;0" keyTimes="0;0.5;0.75;1" dur={`${duration}s`} repeatCount="indefinite" begin={`${delay}s`} />
+                      <animateTransform
+                        attributeName="transform"
+                        type="translate"
+                        values="0 0; 0 0; -28 -14; -36 -22"
+                        keyTimes="0;0.5;0.75;1"
+                        dur={`${duration}s`}
+                        repeatCount="indefinite"
+                        begin={`${delay}s`}
+                      />
+                      <polygon points="-2,-1 10,0 -2,2" fill="#2a3140" />
+                    </g>
+                    <g opacity="0">
+                      <animate attributeName="opacity" values="0;0;1;0" keyTimes="0;0.5;0.75;1" dur={`${duration}s`} repeatCount="indefinite" begin={`${delay}s`} />
+                      <animateTransform
+                        attributeName="transform"
+                        type="translate"
+                        values="0 0; 0 0; 26 12; 38 20"
+                        keyTimes="0;0.5;0.75;1"
+                        dur={`${duration}s`}
+                        repeatCount="indefinite"
+                        begin={`${delay}s`}
+                      />
+                      <polygon points="2,-1 -10,0 2,2" fill="#2a3140" />
+                    </g>
+                  </g>
+                </g>
+              );
+            })}
+          </g>
 
           {/* ── Apron / Parking ── */}
           <rect
