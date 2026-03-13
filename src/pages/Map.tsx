@@ -4,7 +4,6 @@ import { TopBar } from "@/components/game/TopBar";
 import { Base, BaseType, Aircraft } from "@/types/game";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plane,
   Fuel,
   Package,
   Users,
@@ -18,6 +17,7 @@ import {
   MapPin,
   ChevronRight,
 } from "lucide-react";
+import { AircraftIcon } from "@/components/game/AircraftIcons";
 
 // ── Geographic positions (% of map container) ──────────────────────────────
 // Derived from approximate lat/lon, scaled to fit a 70% horizontal band
@@ -492,8 +492,8 @@ function BaseDetail({
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 gap-2">
-        <StatBox icon={<Plane className="h-3.5 w-3.5" />} label="Mission Capable" value={mc.length} total={base.aircraft.length} color="green" />
-        <StatBox icon={<Plane className="h-3.5 w-3.5" />} label="På uppdrag" value={onMission.length} total={base.aircraft.length} color="blue" />
+        <StatBox icon={<AircraftIcon type="GripenE" size={14} />} label="Mission Capable" value={mc.length} total={base.aircraft.length} color="green" />
+        <StatBox icon={<AircraftIcon type="GripenE" size={14} />} label="På uppdrag" value={onMission.length} total={base.aircraft.length} color="blue" />
         <StatBox icon={<Wrench className="h-3.5 w-3.5" />} label="I underhåll" value={maintenance.length + nmc.length} total={base.aircraft.length} color="yellow" />
         <StatBox icon={<Users className="h-3.5 w-3.5" />} label="Personal" value={availPersonnel} total={totalPersonnel} color="purple" />
       </div>
@@ -645,7 +645,7 @@ function BaseDetail({
       {/* Aircraft list */}
       <div>
         <div className="text-[10px] font-mono text-muted-foreground mb-2 flex items-center gap-1">
-          <Plane className="h-3 w-3" /> FLYGPLAN ({base.aircraft.length} st)
+          <AircraftIcon type="GripenE" size={12} /> FLYGPLAN ({base.aircraft.length} st)
         </div>
         <div className="space-y-1">
           {base.aircraft.map((ac) => (
@@ -666,7 +666,7 @@ function BaseDetail({
                 }`}
               />
               <span className="text-[10px] font-mono font-bold text-foreground">{ac.tailNumber}</span>
-              <span className="text-[9px] text-muted-foreground flex-1">{ac.type}</span>
+              <span className="text-[9px] text-muted-foreground flex-1">{ac.type.replace("_", "/")}</span>
               <span className="text-[9px] font-mono text-muted-foreground">{ac.flightHours}h</span>
               <ChevronRight className="h-3 w-3 text-muted-foreground" />
             </button>
@@ -709,13 +709,13 @@ function AircraftDetail({
 
       {/* Status */}
       <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-bold font-mono ${s.cls}`}>
-        <Plane className="h-4 w-4" />
+        <AircraftIcon type={aircraft.type} size={16} />
         {s.label}
       </div>
 
       {/* Details grid */}
       <div className="space-y-2">
-        <Row label="Typ" value={aircraft.type} />
+        <Row label="Typ" value={aircraft.type.replace("_", "/")} />
         <Row label="Svans #" value={aircraft.tailNumber} />
         <Row label="Bas" value={aircraft.currentBase} />
         <Row label="Flygtid" value={`${aircraft.flightHours} h`} />

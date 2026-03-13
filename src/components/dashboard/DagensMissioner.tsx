@@ -1,6 +1,7 @@
 import { Base, MissionType, ScenarioPhase } from "@/types/game";
-import { Shield, Target, Eye, Radio, Plane, Zap, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Shield, Target, Eye, Radio, Zap, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
+import { AircraftIcon } from "../game/AircraftIcons";
 
 interface DagensMissionerProps {
   base: Base;
@@ -20,8 +21,8 @@ interface MissionSummary {
 const missionIcons: Partial<Record<MissionType, React.ReactNode>> = {
   DCA: <Shield className="h-4 w-4" />,
   QRA: <Target className="h-4 w-4" />,
-  RECCE: <Eye className="h-4 w-4" />,
-  AEW: <Radio className="h-4 w-4" />,
+  RECCE: <AircraftIcon type="LOTUS" size={16} />,
+  AEW: <AircraftIcon type="GlobalEye" size={16} />,
   AI_DT: <Zap className="h-4 w-4" />,
 };
 
@@ -118,7 +119,7 @@ export function DagensMissioner({ base, hour, phase }: DagensMissionerProps) {
               {/* Mission type icon */}
               <div className="shrink-0 p-1.5 rounded-lg"
                 style={{ background: "hsl(220 63% 18% / 0.07)", color: "hsl(220 63% 30%)" }}>
-                {missionIcons[mission.type] || <Plane className="h-4 w-4" />}
+                {missionIcons[mission.type] || <AircraftIcon type="GripenE" size={16} />}
               </div>
 
               {/* Labels */}

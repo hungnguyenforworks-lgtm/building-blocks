@@ -1,6 +1,7 @@
 import { ATOOrder, MissionType } from "@/types/game";
 import { motion } from "framer-motion";
-import { Plane, Target, Eye, Shield, Radio, Zap } from "lucide-react";
+import { Target, Eye, Shield, Radio, Zap } from "lucide-react";
+import { AircraftIcon } from "./AircraftIcons";
 
 interface MissionScheduleProps {
   atoOrders: ATOOrder[];
@@ -11,12 +12,12 @@ interface MissionScheduleProps {
 const missionIcons: Partial<Record<MissionType, React.ReactNode>> = {
   DCA: <Shield className="h-3.5 w-3.5" />,
   QRA: <Target className="h-3.5 w-3.5" />,
-  RECCE: <Eye className="h-3.5 w-3.5" />,
-  AEW: <Radio className="h-3.5 w-3.5" />,
+  RECCE: <AircraftIcon type="LOTUS" size={14} />,
+  AEW: <AircraftIcon type="GlobalEye" size={14} />,
   AI_DT: <Zap className="h-3.5 w-3.5" />,
   AI_ST: <Zap className="h-3.5 w-3.5" />,
   ESCORT: <Shield className="h-3.5 w-3.5" />,
-  TRANSPORT: <Plane className="h-3.5 w-3.5" />,
+  TRANSPORT: <AircraftIcon type="GripenE" size={14} />,
 };
 
 function getOrderDisplayStatus(order: ATOOrder, hour: number): "planned" | "active" | "completed" {
@@ -38,7 +39,7 @@ export function MissionSchedule({ atoOrders, day, hour }: MissionScheduleProps) 
     <div className="bg-card border border-border rounded-lg overflow-hidden">
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Plane className="h-4 w-4 text-primary" />
+          <AircraftIcon type="GripenE" size={16} className="text-primary" />
           <h3 className="font-sans font-bold text-sm text-foreground">UPPDRAGSSCHEMA — DAG {day}</h3>
         </div>
         <div className="flex gap-3 text-[10px] font-mono">

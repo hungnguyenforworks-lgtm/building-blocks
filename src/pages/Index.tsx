@@ -17,7 +17,8 @@ import { RemainingLifeGraf } from "@/components/dashboard/RemainingLifeGraf";
 import { BaseMap, DropZone } from "@/components/game/BaseMap";
 import { toast } from "sonner";
 import { BaseType } from "@/types/game";
-import { ShieldCheck, Crosshair, Hammer, Users, Siren, Clock, MapPin, PlaneTakeoff } from "lucide-react";
+import { ShieldCheck, Crosshair, Hammer, Users, Siren, Clock, MapPin } from "lucide-react";
+import { AircraftIcon } from "@/components/game/AircraftIcons";
 
 const Index = () => {
   const { state, advanceTurn, startMaintenance, sendOnMission, getResourceSummary, resetGame, moveAircraftToMaintenance, sendMissionDrop, applyUtfallOutcome, applyRecommendation, dismissRecommendation } = useGame();
@@ -288,7 +289,7 @@ const Index = () => {
                 style={{ borderBottom: "1px solid hsl(215 14% 88%)",
                   background: "linear-gradient(90deg, hsl(220 63% 18% / 0.04), transparent)" }}>
                 <div className="flex items-center gap-2">
-                  <PlaneTakeoff className="h-4 w-4" style={{ color: "hsl(220 63% 30%)" }} />
+                  <AircraftIcon type="GripenE" size={16} style={{ color: "hsl(220 63% 30%)" }} />
                   <h3 className="font-sans font-bold text-sm" style={{ color: "hsl(220 63% 18%)" }}>
                     REMAINING LIFE & SERVICE
                   </h3>

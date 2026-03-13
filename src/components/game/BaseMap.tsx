@@ -8,10 +8,10 @@ import {
   Users,
   Wrench,
   AlertTriangle,
-  Plane,
   Dice6,
 } from "lucide-react";
 import { UtfallModal } from "./UtfallModal";
+import { AircraftShape, AircraftIcon } from "./AircraftIcons";
 
 type BuildingId =
   | "apron"
@@ -84,50 +84,6 @@ function getAircraftColor(ac: Aircraft): string {
   if (ac.hoursToService <= 20) return "#D9192E";
   if (ac.hoursToService < 50) return "#D7AB3A";
   return "#0C234C";
-}
-
-// Reusable Gripen top-down silhouette, facing LEFT (nose at cx-x), centered at (cx,cy)
-function GripenShape({ cx, cy, color, opacity = 1 }: { cx: number; cy: number; color: string; opacity?: number }) {
-  return (
-    <g opacity={opacity}>
-      {/* Main fuselage — long needle shape */}
-      <path
-        d={`M ${cx-15},${cy}
-            L ${cx-11},${cy-2}
-            L ${cx-6},${cy-2.5}
-            L ${cx+1},${cy-2}
-            L ${cx+11},${cy-1.5}
-            L ${cx+14},${cy}
-            L ${cx+11},${cy+1.5}
-            L ${cx+1},${cy+2}
-            L ${cx-6},${cy+2.5}
-            L ${cx-11},${cy+2} Z`}
-        fill={color}
-      />
-      {/* Left main delta wing — sweeps back from mid-fuselage */}
-      <polygon
-        points={`${cx-4},${cy-2} ${cx-1},${cy-14} ${cx+8},${cy-13} ${cx+10},${cy-2}`}
-        fill={color} opacity="0.9"
-      />
-      {/* Right main delta wing */}
-      <polygon
-        points={`${cx-4},${cy+2} ${cx-1},${cy+14} ${cx+8},${cy+13} ${cx+10},${cy+2}`}
-        fill={color} opacity="0.9"
-      />
-      {/* Left forward canard — sweeps forward */}
-      <polygon
-        points={`${cx-9},${cy-2} ${cx-13},${cy-6} ${cx-8},${cy-5} ${cx-7},${cy-2}`}
-        fill={color} opacity="0.85"
-      />
-      {/* Right forward canard */}
-      <polygon
-        points={`${cx-9},${cy+2} ${cx-13},${cy+6} ${cx-8},${cy+5} ${cx-7},${cy+2}`}
-        fill={color} opacity="0.85"
-      />
-      {/* Engine nozzle circle at tail */}
-      <circle cx={cx+14} cy={cy} r="2.5" fill={color} opacity="0.65" />
-    </g>
-  );
 }
 
 export function BaseMap({ base, onDropAircraft, onUtfallOutcome }: BaseMapProps) {
@@ -274,7 +230,7 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome }: BaseMapProps)
                 onMouseEnter={() => setHoveredAc(ac.id)}
                 onMouseLeave={() => setHoveredAc(null)}
               >
-                <GripenShape cx={rx} cy={ry} color={color} />
+                <AircraftShape cx={rx} cy={ry} color={color} type={ac.type} />
                 {/* Speed lines */}
                 <line x1={rx+15} y1={ry-1} x2={rx+24} y2={ry-1} stroke="#D7AB3A" strokeWidth="0.8" opacity="0.7" />
                 <line x1={rx+15} y1={ry+1} x2={rx+24} y2={ry+1} stroke="#D7AB3A" strokeWidth="0.8" opacity="0.7" />
@@ -335,7 +291,7 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome }: BaseMapProps)
                   <ellipse cx={cx} cy={cy} rx="16" ry="12" fill="none" stroke="#D7AB3A" strokeWidth="1.5" strokeDasharray="3 2" />
                 )}
                 <ellipse cx={cx} cy={cy + 1.5} rx="13" ry="5" fill="rgba(0,0,0,0.10)" />
-                <GripenShape cx={cx} cy={cy} color={color} />
+                <AircraftShape cx={cx} cy={cy} color={color} type={ac.type} />
                 {/* Battery bar */}
                 {(() => {
                   const battPct = Math.min(1, ac.hoursToService / 100);
@@ -411,7 +367,7 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome }: BaseMapProps)
               <g key={`maint-${ac.id}`}
                 onMouseEnter={() => setHoveredAc(ac.id)}
                 onMouseLeave={() => setHoveredAc(null)}>
-                <GripenShape cx={mx} cy={my} color="#D7AB3A" opacity={0.75} />
+                <AircraftShape cx={mx} cy={my} color="#D7AB3A" type={ac.type} opacity={0.75} />
                 {hoveredAc === ac.id && (
                   <g>
                     <rect x={mx-18} y={my-20} width="36" height="11" rx="2" fill="#0C234C" opacity="0.95" />
@@ -619,7 +575,7 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome }: BaseMapProps)
             return (
               <g opacity="0.8" style={{ pointerEvents: "none" }}>
                 <ellipse cx={gx} cy={gy + 1.5} rx="14" ry="6" fill="rgba(0,0,0,0.2)" />
-                <GripenShape cx={gx} cy={gy} color={gc} />
+                <AircraftShape cx={gx} cy={gy} color={gc} type={dragAc.type} />
                 {/* Tail number label on ghost */}
                 <rect x={gx-16} y={gy-28} width="32" height="10" rx="2" fill={gc} opacity="0.9" />
                 <text x={gx} y={gy-21} textAnchor="middle" fontSize="7" fill="white" fontFamily="monospace" fontWeight="bold">
@@ -1123,23 +1079,15 @@ function AircraftDetail({ ac }: { ac: Aircraft }) {
       {/* Status header */}
       <div className="flex items-center gap-4">
         {/* Aircraft silhouette icon */}
-        <svg width="80" height="40" viewBox="-20 -20 80 40">
-          <path
-            d={`M -15,0 L -12,-2.5 L 10,-1 L 14,0 L 10,1 L -12,2.5 Z`}
-            fill={color}
-          />
-          <polygon points="2,-2 -8,-13 -12,-3 -3,-2" fill={color} opacity="0.88" />
-          <polygon points="2,2 -8,13 -12,3 -3,2" fill={color} opacity="0.88" />
-          <polygon points="-8,-2 -10,-7 -5,-6 -5,-2" fill={color} opacity="0.82" />
-          <polygon points="-8,2 -10,7 -5,6 -5,2" fill={color} opacity="0.82" />
-          <rect x="11" y="-2.5" width="4" height="5" rx="2" fill={color} opacity="0.7" />
-        </svg>
+        <div className="p-3 rounded-lg bg-muted/50 border border-border">
+          <AircraftIcon type={ac.type} color={color} size={48} />
+        </div>
 
         <div>
           <div className="text-lg font-black font-mono" style={{ color }}>
             {ac.tailNumber}
           </div>
-          <div className="text-xs text-muted-foreground font-mono">{ac.type}</div>
+          <div className="text-xs text-muted-foreground font-mono">{ac.type.replace("_", "/")}</div>
           <div
             className="text-[10px] font-mono font-bold mt-0.5 px-2 py-0.5 rounded-full inline-block border"
             style={{ color, borderColor: `${color}40`, backgroundColor: `${color}10` }}

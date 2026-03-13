@@ -1,8 +1,9 @@
 import { Base, Aircraft } from "@/types/game";
 import { AircraftStatusBadge } from "./StatusBadge";
 import { motion } from "framer-motion";
-import { ArrowRight, Wrench, Plane, CheckCircle, AlertTriangle, RotateCcw } from "lucide-react";
+import { ArrowRight, Wrench, CheckCircle, AlertTriangle, RotateCcw } from "lucide-react";
 import React from "react";
+import { AircraftIcon } from "./AircraftIcons";
 
 interface AircraftPipelineProps {
   base: Base;
@@ -30,6 +31,16 @@ function StageCard({
   onAction?: (id: string) => void;
 }) {
   const [dragOver, setDragOver] = React.useState(false);
+
+  const getStatusColor = (status: Aircraft["status"]) => {
+    switch (status) {
+      case "ready": return "text-status-green";
+      case "on_mission": return "text-status-blue";
+      case "under_maintenance": return "text-status-amber";
+      case "unavailable": return "text-status-red";
+      default: return "text-muted-foreground";
+    }
+  };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -67,6 +78,7 @@ function StageCard({
               className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/50 text-xs font-mono border border-border/50 hover:bg-muted/70 transition-all cursor-pointer"
             >
               <div className="flex items-center gap-2 min-w-0">
+                <AircraftIcon type={ac.type} size={18} className={`${getStatusColor(ac.status)} shrink-0`} />
                 <span className="font-bold text-foreground text-sm">{ac.tailNumber}</span>
                 <span className="text-[10px] text-muted-foreground truncate">{ac.type.replace("_", "/")}</span>
               </div>
@@ -145,7 +157,7 @@ export function AircraftPipeline({ base, onStartMaintenance, onSendMission }: Ai
           />
           <StageCard
             title="På uppdrag"
-            icon={<Plane className="h-4 w-4 text-status-blue" />}
+            icon={<AircraftIcon type="GripenE" size={16} className="text-status-blue" />}
             count={onMission.length}
             color="border-status-blue/30"
             aircraft={onMission}
