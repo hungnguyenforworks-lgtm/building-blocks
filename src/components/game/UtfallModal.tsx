@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Aircraft } from "@/types/game";
 import { motion, AnimatePresence } from "framer-motion";
-import { Dice6, CheckCircle, AlertTriangle, RefreshCw, Wrench, X, Zap } from "lucide-react";
+import { Dice6, CheckCircle, AlertTriangle, RefreshCw, Wrench, X, Zap, Plane } from "lucide-react";
 
 // ── Utfall table data ─────────────────────────────────────────────────────
 export interface UtfallOutcome {
@@ -157,15 +157,27 @@ interface UtfallModalProps {
   aircraft: Aircraft;
   onClose: () => void;
   onAccept: (outcome: UtfallOutcome) => void;
+  /** "runway" = auto-roll + mission/service choice; "manual" = existing manual roll */
+  context?: "manual" | "runway";
+  /** Called when user chooses to proceed with the mission (runway context) */
+  onProceedMission?: () => void;
 }
 
-export function UtfallModal({ aircraft, onClose, onAccept }: UtfallModalProps) {
+export function UtfallModal({ aircraft, onClose, onAccept, context = "manual", onProceedMission }: UtfallModalProps) {
   const [rolled, setRolled] = useState<number | null>(null);
   const [rolling, setRolling] = useState(false);
   const [decision, setDecision] = useState<string | null>(null);
   const [rollCount, setRollCount] = useState(0);
 
   const outcome = rolled !== null ? UTFALL_TABLE[rolled - 1] : null;
+
+  // Auto-roll when opened from runway drop
+  useEffect(() => {
+    if (context === "runway") {
+      rollDice();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const rollDice = () => {
     setRolling(true);
@@ -217,11 +229,13 @@ export function UtfallModal({ aircraft, onClose, onAccept }: UtfallModalProps) {
           <div>
             <div className="text-lg font-black font-mono tracking-widest flex items-center gap-2">
               <Dice6 className="h-5 w-5" />
-              UTFALL-CHECK
+              {context === "runway" ? "UTFALL — UPPDRAGSFÖRBEREDELSE" : "UTFALL-CHECK"}
             </div>
             <div className="text-sm opacity-80 font-mono">
               {aircraft.tailNumber} · {aircraft.type} ·{" "}
-              <span className="text-yellow-300 font-bold">{aircraft.status.replace(/_/g, " ").toUpperCase()}</span>
+              <span className="text-yellow-300 font-bold">
+                {context === "runway" ? "STARTKONTROLL BIT" : aircraft.status.replace(/_/g, " ").toUpperCase()}
+              </span>
             </div>
           </div>
           <button
@@ -398,9 +412,91 @@ export function UtfallModal({ aircraft, onClose, onAccept }: UtfallModalProps) {
             )}
           </AnimatePresence>
 
-          {/* ── Decision panel: negative outcomes ── */}
+          {/* ── RUNWAY CONTEXT: decision after roll ── */}
           <AnimatePresence>
-            {outcome?.isNegative && !rolling && (
+            {context === "runway" && outcome && !rolling && (
+              <motion.div
+                key={`runway-decision-${rolled}-${rollCount}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className={`rounded-xl border-2 p-4 ${outcome.isNegative ? "border-red-400 bg-red-50" : "border-green-400 bg-green-50"}`}
+              >
+                <div className={`text-sm font-black font-mono mb-4 flex items-center gap-2 ${outcome.isNegative ? "text-red-700" : "text-green-700"}`}>
+                  {outcome.isNegative
+                    ? <><AlertTriangle className="h-4 w-4" /> BIT-FEL DETEKTERAT — VAD GÖR VI?</>
+                    : <><CheckCircle className="h-4 w-4" /> BIT OK — PLANET ÄR REDO</>
+                  }
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* For positive: primary = proceed, secondary = send to service */}
+                  {/* For negative: primary = send to maintenance, secondary = override and fly */}
+                  {!outcome.isNegative ? (
+                    <>
+                      <button
+                        onClick={() => { setDecision("proceed"); setTimeout(() => onProceedMission?.(), 300); }}
+                        disabled={!!decision}
+                        className="p-4 rounded-xl border-2 border-green-400 bg-white hover:bg-green-50 text-left transition-all hover:shadow-md active:scale-95 disabled:opacity-50"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Plane className="h-4 w-4 text-green-600" />
+                          <span className="text-[12px] font-black font-mono text-green-700">STARTA UPPDRAG</span>
+                        </div>
+                        <div className="text-[9px] font-mono text-gray-500">Planet är klart — skicka på uppdrag</div>
+                      </button>
+                      <button
+                        onClick={() => { setDecision("service"); setTimeout(() => onAccept(outcome), 300); }}
+                        disabled={!!decision}
+                        className="p-4 rounded-xl border-2 border-gray-200 bg-white hover:bg-gray-50 text-left transition-all hover:shadow-md active:scale-95 disabled:opacity-50"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Wrench className="h-4 w-4 text-gray-500" />
+                          <span className="text-[12px] font-black font-mono text-gray-600">SKICKA TILL SERVICE</span>
+                        </div>
+                        <div className="text-[9px] font-mono text-gray-500">Planera service istället för uppdrag</div>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => { setDecision("maintenance"); setTimeout(() => onAccept(outcome), 300); }}
+                        disabled={!!decision}
+                        className="p-4 rounded-xl border-2 border-red-400 bg-white hover:bg-red-50 text-left transition-all hover:shadow-md active:scale-95 disabled:opacity-50"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Wrench className="h-4 w-4 text-red-600" />
+                          <span className="text-[12px] font-black font-mono text-red-700">SÄTT I UNDERHÅLL</span>
+                        </div>
+                        <div className="text-[9px] font-mono text-gray-500">Rekommenderat — {outcome.repairTime}h åtgärd ({outcome.actionType})</div>
+                      </button>
+                      <button
+                        onClick={() => { setDecision("override"); setTimeout(() => onProceedMission?.(), 300); }}
+                        disabled={!!decision}
+                        className="p-4 rounded-xl border-2 border-orange-300 bg-white hover:bg-orange-50 text-left transition-all hover:shadow-md active:scale-95 disabled:opacity-50"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <AlertTriangle className="h-4 w-4 text-orange-500" />
+                          <span className="text-[12px] font-black font-mono text-orange-600">KÖR ÄNDÅ</span>
+                        </div>
+                        <div className="text-[9px] font-mono text-gray-500">Riskarbete — skicka trots fel ({outcome.weaponLoss}% vapensystemsförlust)</div>
+                      </button>
+                    </>
+                  )}
+                </div>
+                <button
+                  onClick={rollDice}
+                  disabled={rolling || !!decision}
+                  className="mt-3 w-full py-2 text-[10px] font-mono text-gray-400 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-30"
+                >
+                  <RefreshCw className="h-3 w-3" /> Slå om tärningen
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ── MANUAL CONTEXT: decision panel for negative outcomes ── */}
+          <AnimatePresence>
+            {context === "manual" && outcome?.isNegative && !rolling && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -456,9 +552,9 @@ export function UtfallModal({ aircraft, onClose, onAccept }: UtfallModalProps) {
             )}
           </AnimatePresence>
 
-          {/* ── Accept button for positive outcomes ── */}
+          {/* ── MANUAL CONTEXT: Accept button for positive outcomes ── */}
           <AnimatePresence>
-            {outcome && !outcome.isNegative && !rolling && (
+            {context === "manual" && outcome && !outcome.isNegative && !rolling && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
