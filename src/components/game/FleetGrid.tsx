@@ -2,6 +2,7 @@ import { Base, Aircraft } from "@/types/game";
 import { AircraftStatusBadge } from "./StatusBadge";
 import { motion } from "framer-motion";
 import { Wrench, Send, Clock } from "lucide-react";
+import { AircraftIcon } from "./AircraftIcons";
 
 interface FleetGridProps {
   base: Base;
@@ -83,12 +84,23 @@ export function FleetGrid({ base, onStartMaintenance, onSendMission }: FleetGrid
 function AircraftRow({ ac, action, onAction }: { ac: Aircraft; action?: "maintain" | "mission"; onAction?: () => void }) {
   const serviceWarning = ac.hoursToService < 20;
 
+  const getStatusColor = (status: Aircraft["status"]) => {
+    switch (status) {
+      case "ready": return "text-status-green";
+      case "on_mission": return "text-status-blue";
+      case "under_maintenance": return "text-status-amber";
+      case "unavailable": return "text-status-red";
+      default: return "text-muted-foreground";
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="flex items-center gap-3 px-3 py-2 rounded border border-border/50 bg-muted/30 text-xs font-mono"
     >
+      <AircraftIcon type={ac.type} size={18} className={`${getStatusColor(ac.status)} shrink-0`} />
       <span className="font-bold text-foreground w-12">{ac.tailNumber}</span>
       <span className="text-muted-foreground w-20 truncate">{ac.type.replace("_", "/")}</span>
       <AircraftStatusBadge status={ac.status} />
