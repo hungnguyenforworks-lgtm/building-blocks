@@ -27,10 +27,14 @@ interface BaseMapProps {
   base: Base;
   onDropAircraft: (aircraftId: string, zone: DropZone) => void;
   onUtfallOutcome?: (aircraftId: string, repairTime: number, maintenanceTypeKey: string, weaponLoss: number, actionLabel: string) => void;
-  /** Aircraft IDs that should currently be on a mission per the ATO schedule but aren't dispatched yet */
+  /** Aircraft IDs whose ATO mission window is active NOW (pulsing orange) */
   overdueAircraftIds?: string[];
-  /** Mission label per overdue aircraft ID */
+  /** Mission label per urgent aircraft ID */
   overdueMissionLabels?: Record<string, string>;
+  /** Aircraft IDs assigned to a future ATO mission (steady blue) */
+  upcomingAircraftIds?: string[];
+  /** "MISSIONTYPE HH:00" label per upcoming aircraft ID */
+  upcomingMissionLabels?: Record<string, string>;
 }
 
 // Drop zones in SVG coordinate space (viewBox 900×500)
@@ -104,7 +108,7 @@ function AircraftImage({ cx, cy, color = "#0C234C", opacity = 1 }: { cx: number;
   );
 }
 
-export function BaseMap({ base, onDropAircraft, onUtfallOutcome, overdueAircraftIds = [], overdueMissionLabels = {} }: BaseMapProps) {
+export function BaseMap({ base, onDropAircraft, onUtfallOutcome, overdueAircraftIds = [], overdueMissionLabels = {}, upcomingAircraftIds = [], upcomingMissionLabels = {} }: BaseMapProps) {
   const [selected, setSelected] = useState<BuildingId>(null);
   const [hoveredAc, setHoveredAc] = useState<string | null>(null);
   const [selectedAcId, setSelectedAcId] = useState<string | null>(null);
@@ -291,13 +295,12 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome, overdueAircraft
                 {isSelAc && (
                   <ellipse cx={cx} cy={cy} rx="20" ry="15" fill="none" stroke="#D7AB3A" strokeWidth="1.5" strokeDasharray="3 2" />
                 )}
-                {/* Overdue mission alert ring */}
+                {/* Urgent: mission active NOW — pulsing orange ring + badge */}
                 {overdueAircraftIds.includes(ac.id) && (
                   <g>
                     <ellipse cx={cx} cy={cy} rx="22" ry="17" fill="none" stroke="#FF6B00" strokeWidth="2" strokeDasharray="4 2" opacity="0.9">
                       <animate attributeName="stroke-opacity" values="0.9;0.2;0.9" dur="1s" repeatCount="indefinite" />
                     </ellipse>
-                    {/* Mission badge — centered below the plane */}
                     {(() => {
                       const label = overdueMissionLabels[ac.id] ?? "NU!";
                       const bw = Math.max(28, label.length * 5 + 8);
@@ -305,6 +308,22 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome, overdueAircraft
                         <>
                           <rect x={cx - bw / 2} y={cy + 14} width={bw} height="11" rx="2.5" fill="#FF6B00" />
                           <text x={cx} y={cy + 22} textAnchor="middle" fontSize="6" fill="white" fontFamily="monospace" fontWeight="bold">{label}</text>
+                        </>
+                      );
+                    })()}
+                  </g>
+                )}
+                {/* Upcoming: future ATO assignment — steady blue badge */}
+                {!overdueAircraftIds.includes(ac.id) && upcomingAircraftIds.includes(ac.id) && (
+                  <g>
+                    <ellipse cx={cx} cy={cy} rx="22" ry="17" fill="none" stroke="#3B82F6" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.7" />
+                    {(() => {
+                      const label = upcomingMissionLabels[ac.id] ?? "SCHD";
+                      const bw = Math.max(32, label.length * 4.5 + 8);
+                      return (
+                        <>
+                          <rect x={cx - bw / 2} y={cy + 14} width={bw} height="11" rx="2.5" fill="#1D4ED8" opacity="0.9" />
+                          <text x={cx} y={cy + 22} textAnchor="middle" fontSize="5.5" fill="white" fontFamily="monospace" fontWeight="bold">{label}</text>
                         </>
                       );
                     })()}

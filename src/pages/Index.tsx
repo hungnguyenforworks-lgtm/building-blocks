@@ -114,29 +114,45 @@ const Index = () => {
       toast.info(`💣 ${tail} schemalagd för beväpning vid ammodepån`);
     }
   };
-  // Aircraft that should currently be on a mission per the Flygschema — uses same hash logic as FlygschemaTidslinje
+  // Aircraft mission markers for Basöversikt:
+  //   urgentMap   = assigned to an ATO order whose window is active RIGHT NOW (pulsing orange)
+  //   upcomingMap = assigned to an ATO order not yet started (steady blue)
+  //   fallback    = hash-based simulated slot active now, no real ATO assignment (pulsing orange)
   const SCHD_MISSIONS = ["DCA", "QRA", "RECCE", "AEW", "AI_DT", "ESCORT"] as const;
-  const overdueMap: Record<string, string> = {};
+  const urgentMap: Record<string, string> = {};
+  const upcomingMap: Record<string, string> = {};
+
   selectedBase.aircraft.forEach((ac) => {
     if (ac.status !== "ready" && ac.status !== "allocated") return;
-    // Check real ATO orders first
-    const realOrder = state.atoOrders.find(
+
+    // All ATO orders that have this aircraft assigned
+    const myOrders = state.atoOrders.filter(
       (o) => o.launchBase === selectedBaseId &&
              o.assignedAircraft.includes(ac.id) &&
-             (o.status === "assigned" || o.status === "dispatched") &&
-             o.startHour <= state.hour && o.endHour > state.hour
+             (o.status === "assigned" || o.status === "pending")
     );
-    if (realOrder) { overdueMap[ac.id] = realOrder.missionType; return; }
-    // Fall back to simulated Flygschema slot (same hash as FlygschemaTidslinje getSlots)
+
+    if (myOrders.length > 0) {
+      const activeNow = myOrders.find((o) => o.startHour <= state.hour && o.endHour > state.hour);
+      const upcoming  = myOrders.find((o) => o.startHour > state.hour);
+      if (activeNow) { urgentMap[ac.id] = activeNow.missionType; }
+      else if (upcoming) { upcomingMap[ac.id] = `${upcoming.missionType} ${String(upcoming.startHour).padStart(2,"0")}:00`; }
+      return; // has real assignment — skip hash fallback
+    }
+
+    // Hash-based simulated fallback (same formula as FlygschemaTidslinje)
     const hash = parseInt(ac.id.replace(/\D/g, "")) || 1;
     const mStart = 6 + (hash % 9);
     const mEnd = Math.min(21, mStart + 2 + (hash % 3));
     if (state.hour >= mStart && state.hour < mEnd) {
-      overdueMap[ac.id] = SCHD_MISSIONS[hash % SCHD_MISSIONS.length];
+      urgentMap[ac.id] = SCHD_MISSIONS[hash % SCHD_MISSIONS.length];
     }
   });
-  const overdueAircraftIds = Object.keys(overdueMap);
-  const overdueMissionLabels = overdueMap;
+
+  const overdueAircraftIds = Object.keys(urgentMap);
+  const overdueMissionLabels = urgentMap;
+  const upcomingAircraftIds = Object.keys(upcomingMap);
+  const upcomingMissionLabels = upcomingMap;
 
   const kritiskaResurser = selectedBase.spareParts.filter((p) => p.quantity / p.maxQuantity < 0.3).length +
     selectedBase.ammunition.filter((a) => a.quantity / a.max < 0.3).length;
