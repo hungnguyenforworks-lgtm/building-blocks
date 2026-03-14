@@ -49,11 +49,11 @@ const MOB: Base = {
   name: "Huvudbas MOB",
   type: "huvudbas",
   aircraft: [
-    ...createAircraft("MOB", "GripenE", "GE", 8),
-    ...createAircraft("MOB", "GripenF_EA", "GF", 2),
-    ...createAircraft("MOB", "GlobalEye", "GB", 1),
-    ...createAircraft("MOB", "VLO_UCAV", "VL", 2),
-    ...createAircraft("MOB", "LOTUS", "LO", 1),
+    ...createAircraft("MOB", "GripenE", "GE", 18),
+    ...createAircraft("MOB", "GripenF_EA", "GF", 6),
+    ...createAircraft("MOB", "GlobalEye", "GB", 2),
+    ...createAircraft("MOB", "VLO_UCAV", "VL", 4),
+    ...createAircraft("MOB", "LOTUS", "LO", 2),
   ],
   spareParts: createSpareParts(),
   personnel: createPersonnel(1),
@@ -74,8 +74,8 @@ const FOB_N: Base = {
   name: "Sidobas FOB Nord",
   type: "sidobas",
   aircraft: [
-    ...createAircraft("FOB_N", "GripenE", "GE", 6),
-    ...createAircraft("FOB_N", "LOTUS", "LO", 1),
+    ...createAircraft("FOB_N", "GripenE", "GE", 12),
+    ...createAircraft("FOB_N", "LOTUS", "LO", 2),
   ],
   spareParts: createSpareParts().map((p) => ({
     ...p,
@@ -98,7 +98,7 @@ const FOB_S: Base = {
   id: "FOB_S",
   name: "Sidobas FOB Syd",
   type: "sidobas",
-  aircraft: createAircraft("FOB_S", "GripenF_EA", "GF", 4),
+  aircraft: createAircraft("FOB_S", "GripenF_EA", "GF", 6),
   spareParts: createSpareParts().map((p) => ({
     ...p,
     quantity: Math.ceil(p.quantity * 0.5),
