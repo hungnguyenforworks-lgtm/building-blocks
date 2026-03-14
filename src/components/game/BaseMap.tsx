@@ -8,8 +8,6 @@ import {
   Users,
   Wrench,
   AlertTriangle,
-  Plane,
-  Dice6,
 } from "lucide-react";
 import { UtfallModal } from "./UtfallModal";
 
@@ -302,7 +300,7 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome }: BaseMapProps)
                       const bX = cx - 18, bY = cy + 23, bW = 36, bH = 6;
                       return (
                         <>
-                          <rect x={bX - 2} y={bY - 2} width={bW + 10} height={bH + 4} rx="3"
+                          <rect x={bX - 2} y={bY - 2} width={bW + 26} height={bH + 4} rx="3"
                             fill="#0C234C" fillOpacity="0.85" />
                           <rect x={bX} y={bY} width={bW} height={bH} rx={1.5}
                             fill="rgba(255,255,255,0.4)" stroke="#D7DEE1" strokeWidth={0.5} />
@@ -1110,117 +1108,3 @@ function SparePartsDetail({ base }: { base: Base }) {
   );
 }
 
-function AircraftDetail({ ac }: { ac: Aircraft }) {
-  const color = AC_COLOR[ac.status];
-  const pct = Math.min(100, (ac.hoursToService / 100) * 100);
-  const isCritical = ac.hoursToService < 20;
-  const isLow = ac.hoursToService < 40;
-  const barColor = isCritical ? "#dc2626" : isLow ? "#d97706" : "#16a34a";
-
-  const statusLabels: Record<string, string> = {
-    ready: "Mission Capable",
-    allocated: "Tilldelad",
-    in_preparation: "Klargöring",
-    awaiting_launch: "Väntar Start",
-    on_mission: "På Uppdrag",
-    returning: "Retur",
-    recovering: "Mottagning",
-    under_maintenance: "Underhåll",
-    unavailable: "Ej Operativ",
-  };
-
-  return (
-    <div className="space-y-4">
-      {/* Status header */}
-      <div className="flex items-center gap-4">
-        {/* Aircraft silhouette icon */}
-        <svg width="80" height="40" viewBox="-20 -20 80 40">
-          <path
-            d={`M -15,0 L -12,-2.5 L 10,-1 L 14,0 L 10,1 L -12,2.5 Z`}
-            fill={color}
-          />
-          <polygon points="2,-2 -8,-13 -12,-3 -3,-2" fill={color} opacity="0.88" />
-          <polygon points="2,2 -8,13 -12,3 -3,2" fill={color} opacity="0.88" />
-          <polygon points="-8,-2 -10,-7 -5,-6 -5,-2" fill={color} opacity="0.82" />
-          <polygon points="-8,2 -10,7 -5,6 -5,2" fill={color} opacity="0.82" />
-          <rect x="11" y="-2.5" width="4" height="5" rx="2" fill={color} opacity="0.7" />
-        </svg>
-
-        <div>
-          <div className="text-lg font-black font-mono" style={{ color }}>
-            {ac.tailNumber}
-          </div>
-          <div className="text-xs text-muted-foreground font-mono">{ac.type}</div>
-          <div
-            className="text-[10px] font-mono font-bold mt-0.5 px-2 py-0.5 rounded-full inline-block border"
-            style={{ color, borderColor: `${color}40`, backgroundColor: `${color}10` }}
-          >
-            {statusLabels[ac.status]}
-          </div>
-        </div>
-      </div>
-
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-        {[
-          { label: "TOTAL FLYGTID", value: `${ac.flightHours}h` },
-          { label: "TILL SERVICE", value: `${ac.hoursToService}h`, urgent: isCritical || isLow },
-          { label: "UPPDRAG", value: ac.currentMission || "—" },
-          { label: "UH-TYP", value: ac.maintenanceType ? ac.maintenanceType.replace(/_/g, " ") : "—" },
-        ].map((item) => (
-          <div key={item.label} className="bg-muted/30 border border-border rounded-lg p-2.5">
-            <div className="text-[8px] text-muted-foreground font-mono mb-1">{item.label}</div>
-            <div
-              className={`text-sm font-black font-mono ${item.urgent ? "" : "text-foreground"}`}
-              style={item.urgent ? { color: barColor } : {}}
-            >
-              {item.value}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Remaining life bar */}
-      <div>
-        <div className="flex justify-between text-[9px] font-mono text-muted-foreground mb-1">
-          <span>REMAINING LIFE (till 100h-service)</span>
-          <span style={{ color: barColor }} className="font-bold">{ac.hoursToService}h kvar</span>
-        </div>
-        <div className="h-3 bg-muted rounded-full overflow-hidden">
-          <motion.div
-            className="h-full rounded-full"
-            style={{ backgroundColor: barColor }}
-            initial={{ width: 0 }}
-            animate={{ width: `${pct}%` }}
-            transition={{ duration: 0.5 }}
-          />
-        </div>
-        {isCritical && (
-          <div className="text-[9px] text-red-600 font-mono mt-1 font-bold">
-            ⚠ KRITISK NIVÅ — Ta in för service omedelbart
-          </div>
-        )}
-        {isLow && !isCritical && (
-          <div className="text-[9px] text-amber-600 font-mono mt-1">
-            Planera service inom kort
-          </div>
-        )}
-      </div>
-
-      {/* Maintenance details if applicable */}
-      {(ac.maintenanceType || ac.maintenanceTimeRemaining !== undefined) && (
-        <div className="flex gap-4 text-[10px] font-mono bg-amber-50 border border-amber-200/60 rounded-lg p-2.5">
-          <Wrench className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-          <div>
-            {ac.maintenanceType && (
-              <div><span className="text-muted-foreground">Typ: </span><span className="font-bold">{ac.maintenanceType.replace(/_/g, " ")}</span></div>
-            )}
-            {ac.maintenanceTimeRemaining !== undefined && (
-              <div><span className="text-muted-foreground">Tid kvar: </span><span className="font-bold text-amber-700">{ac.maintenanceTimeRemaining}h</span></div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
