@@ -202,7 +202,7 @@ const Index = () => {
 
           {/* ROW 1: KPI strip */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <StatusKort titel="Mission Capable" varde={mcTotal} subtitel={`av ${selectedBase.aircraft.length} totalt`} ikon={<ShieldCheck className="h-5 w-5" />} farg="green" />
+            <StatusKort titel="Mission Capable" varde={mcTotal} subtitel={`av ${selectedBase.aircraft.length} totalt`} ikon={<ShieldCheck className="h-5 w-5" />} farg="green" max={selectedBase.aircraft.length} />
             <StatusKort titel="På uppdrag" varde={onMissionTotal} subtitel="aktiva flygningar" ikon={<Crosshair className="h-5 w-5" />} farg="blue" />
             <StatusKort titel="I underhåll" varde={inMaintTotal} subtitel="NMC + UH" ikon={<Hammer className="h-5 w-5" />} farg="yellow" />
             <StatusKort titel="Personal" varde={`${personnelAvail}/${personnelTotal}`} subtitel="tillgänglig personal" ikon={<Users className="h-5 w-5" />} farg="purple" />

@@ -12,12 +12,14 @@ const createSpareParts = (): SparePartStock[] => [
   { id: "ue_motor", name: "UE Motor", category: "UE", quantity: 1, maxQuantity: 2, reservedQuantity: 0, resupplyDays: 5, onOrder: 0, leadTime: 5, source: "mro", turnaround: 30, isReusable: true },
 ];
 
+// MOB (scale=1) = 150 total. ~13 crew per aircraft in service → realistic for 8-bay operation.
+// FOB_N (scale=0.7) ≈ 105, FOB_S (scale=0.5) ≈ 75
 const createPersonnel = (scale: number): PersonnelGroup[] => [
-  { id: "mech", role: "Flygmekaniker", available: Math.round(12 * scale), total: Math.round(16 * scale), onDuty: true },
-  { id: "tech", role: "Tekniker Avionik", available: Math.round(4 * scale), total: Math.round(6 * scale), onDuty: true },
-  { id: "arms", role: "Vapensmed", available: Math.round(3 * scale), total: Math.round(4 * scale), onDuty: true },
-  { id: "fuel", role: "Drivmedelspersonal", available: Math.round(3 * scale), total: Math.round(4 * scale), onDuty: true },
-  { id: "command", role: "Basbefäl", available: Math.round(2 * scale), total: Math.round(3 * scale), onDuty: true },
+  { id: "mech",    role: "Flygmekaniker",        available: Math.round(65 * scale), total: Math.round(80 * scale), onDuty: true },
+  { id: "tech",    role: "Tekniker Avionik",      available: Math.round(24 * scale), total: Math.round(30 * scale), onDuty: true },
+  { id: "arms",    role: "Vapensmed",             available: Math.round(16 * scale), total: Math.round(20 * scale), onDuty: true },
+  { id: "fuel",    role: "Drivmedelspersonal",    available: Math.round(10 * scale), total: Math.round(12 * scale), onDuty: true },
+  { id: "command", role: "Basbefäl",              available: Math.round( 7 * scale), total: Math.round( 8 * scale), onDuty: true },
 ];
 
 const createAircraft = (base: string, type: AircraftType, prefix: string, count: number): Aircraft[] =>
@@ -61,7 +63,7 @@ const MOB: Base = {
     { type: "GBU-39", quantity: 16, max: 24 },
     { type: "RBS-15F", quantity: 6, max: 8 },
   ],
-  maintenanceBays: { total: 4, occupied: 0 },
+  maintenanceBays: { total: 8, occupied: 0 },
   zones: createZones("huvudbas", "MOB"),
 };
 

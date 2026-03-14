@@ -6,6 +6,7 @@ interface StatusKortProps {
   subtitel?: string;
   ikon: React.ReactNode;
   farg: "green" | "blue" | "yellow" | "purple" | "red";
+  max?: number;
 }
 
 const accentMap: Record<StatusKortProps["farg"], {
@@ -59,7 +60,7 @@ const accentMap: Record<StatusKortProps["farg"], {
   },
 };
 
-export function StatusKort({ titel, varde, subtitel, ikon, farg }: StatusKortProps) {
+export function StatusKort({ titel, varde, subtitel, ikon, farg, max }: StatusKortProps) {
   const c = accentMap[farg];
   return (
     <motion.div
@@ -104,7 +105,7 @@ export function StatusKort({ titel, varde, subtitel, ikon, farg }: StatusKortPro
                 stroke="hsl(216 18% 90%)" strokeWidth="3" />
               <circle cx="22" cy="22" r="18" fill="none"
                 stroke={c.strip} strokeWidth="3"
-                strokeDasharray={`${(Math.min(varde, 20) / 20) * 113} 113`}
+                strokeDasharray={`${(Math.min(varde as number, max ?? 20) / (max ?? 20)) * 113} 113`}
                 strokeLinecap="round"
                 transform="rotate(-90 22 22)"
               />
