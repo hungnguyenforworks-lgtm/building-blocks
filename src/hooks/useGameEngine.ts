@@ -27,6 +27,9 @@ export interface GameEngine {
   deleteATOOrder: (orderId: string) => void;
   applyRecommendation: (recommendationId: string) => void;
   dismissRecommendation: (recommendationId: string) => void;
+  hangarDropConfirm: (baseId: string, aircraftId: string, repairTime: number, maintenanceTypeKey: string, restoreHealth: boolean) => void;
+  pauseMaintenance: (baseId: string, aircraftId: string) => void;
+  markFaultNMC: (baseId: string, aircraftId: string, repairTime: number, maintenanceTypeKey: string, actionLabel: string) => void;
 }
 
 export function useGameEngine(): GameEngine {
@@ -100,6 +103,18 @@ export function useGameEngine(): GameEngine {
     dispatch({ type: "DISMISS_RECOMMENDATION", recommendationId });
   }, []);
 
+  const hangarDropConfirm = useCallback((baseId: string, aircraftId: string, repairTime: number, maintenanceTypeKey: string, restoreHealth: boolean) => {
+    dispatch({ type: "HANGAR_DROP_CONFIRM", baseId: baseId as BaseType, aircraftId, repairTime, maintenanceTypeKey, restoreHealth });
+  }, []);
+
+  const pauseMaintenance = useCallback((baseId: string, aircraftId: string) => {
+    dispatch({ type: "PAUSE_MAINTENANCE", baseId: baseId as BaseType, aircraftId });
+  }, []);
+
+  const markFaultNMC = useCallback((baseId: string, aircraftId: string, repairTime: number, maintenanceTypeKey: string, actionLabel: string) => {
+    dispatch({ type: "MARK_FAULT_NMC", baseId: baseId as BaseType, aircraftId, repairTime, maintenanceTypeKey, actionLabel });
+  }, []);
+
   const getResourceSummary = useCallback((): string => {
     const lines: string[] = [];
     lines.push(`=== RESURSLÄGE DAG ${state.day} ${String(state.hour).padStart(2, "0")}:00 - FAS: ${state.phase} ===\n`);
@@ -142,12 +157,12 @@ export function useGameEngine(): GameEngine {
     dispatchOrder, moveAircraftToMaintenance, sendMissionDrop,
     applyUtfallOutcome, completeLandingCheck, resetGame, getResourceSummary,
     createATOOrder, editATOOrder, deleteATOOrder,
-    applyRecommendation, dismissRecommendation,
+    applyRecommendation, dismissRecommendation, hangarDropConfirm, pauseMaintenance, markFaultNMC,
   }), [
     state, advanceTurn, startMaintenance, sendOnMission, assignAircraftToOrder,
     dispatchOrder, moveAircraftToMaintenance, sendMissionDrop,
     applyUtfallOutcome, completeLandingCheck, resetGame, getResourceSummary,
     createATOOrder, editATOOrder, deleteATOOrder,
-    applyRecommendation, dismissRecommendation,
+    applyRecommendation, dismissRecommendation, hangarDropConfirm, pauseMaintenance, markFaultNMC,
   ]);
 }

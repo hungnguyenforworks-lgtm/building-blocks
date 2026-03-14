@@ -52,8 +52,11 @@ export function LandingReceptionModal({ aircraft, baseId, onComplete, remaining 
   const [rolling, setRolling] = useState(false);
   const [displayRoll, setDisplayRoll] = useState<number | null>(null);
 
-  useEffect(() => {
-    // Auto-roll on mount
+  // Auto-roll on mount
+  useEffect(() => { handleRoll(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleRoll = () => {
+    if (rolling || result) return; // hold result if already rolled
     setRolling(true);
     let count = 0;
     const interval = setInterval(() => {
@@ -67,8 +70,7 @@ export function LandingReceptionModal({ aircraft, baseId, onComplete, remaining 
         setRolling(false);
       }
     }, 80);
-    return () => clearInterval(interval);
-  }, [aircraft.id]);
+  };
 
   const handleIgnore = () => {
     onComplete(aircraft.id, baseId, false);

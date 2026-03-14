@@ -57,6 +57,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case "COMPLETE_LANDING_CHECK":
       return handleCompleteLandingCheck(state, action.baseId, action.aircraftId, action.sendToMaintenance, action.repairTime, action.maintenanceTypeKey, action.weaponLoss, action.actionLabel);
 
+    case "HANGAR_DROP_CONFIRM":
+      return handleHangarDropConfirm(state, action.baseId, action.aircraftId, action.repairTime, action.maintenanceTypeKey, action.restoreHealth);
+
+    case "PAUSE_MAINTENANCE":
+      return handlePauseMaintenance(state, action.baseId, action.aircraftId);
+
+    case "MARK_FAULT_NMC":
+      return handleMarkFaultNMC(state, action.baseId, action.aircraftId, action.repairTime, action.maintenanceTypeKey, action.actionLabel);
+
     case "MOVE_AIRCRAFT":
       return state; // TODO: implement zone-based movement
 
@@ -305,6 +314,97 @@ function handleApplyUtfall(
   return addEvent({ ...state, bases: updatedBases }, {
     type: "warning",
     message: `UTFALL: ${aircraftId} — ${actionLabel} — ${repairTime}h underhåll (Vapensystemsförlust ${weaponLoss}%)`,
+    base: baseId,
+  });
+}
+
+function handleHangarDropConfirm(
+  state: GameState,
+  baseId: string,
+  aircraftId: string,
+  repairTime: number,
+  maintenanceTypeKey: string,
+  restoreHealth: boolean,
+): GameState {
+  const updatedBases = state.bases.map((base) => {
+    if (base.id !== baseId) return base;
+    const aircraft = base.aircraft.map((ac) => {
+      if (ac.id !== aircraftId) return ac;
+      return {
+        ...ac,
+        status: "under_maintenance" as AircraftStatus,
+        maintenanceType: maintenanceTypeKey as any,
+        maintenanceTimeRemaining: repairTime,
+        // health restored to 100 on maintenance completion (handled in phases.ts)
+      };
+    });
+    const maintCount = aircraft.filter((a) => a.status === "under_maintenance").length;
+    return {
+      ...base,
+      aircraft,
+      maintenanceBays: { ...base.maintenanceBays, occupied: Math.min(maintCount, base.maintenanceBays.total) },
+    };
+  });
+
+  const label = restoreHealth ? "Förebyggande underhåll" : "Felsökning/Reparation";
+  return addEvent({ ...state, bases: updatedBases }, {
+    type: "info",
+    message: `🔧 ${aircraftId} — ${label} (${repairTime}h) påbörjat`,
+    base: baseId,
+  });
+}
+
+function handleMarkFaultNMC(
+  state: GameState,
+  baseId: string,
+  aircraftId: string,
+  repairTime: number,
+  maintenanceTypeKey: string,
+  actionLabel: string,
+): GameState {
+  // Mark aircraft as unavailable (NMC) with fault data stored — NOT placed in a bay yet
+  const updatedBases = state.bases.map((base) => {
+    if (base.id !== baseId) return base;
+    return {
+      ...base,
+      aircraft: base.aircraft.map((ac) => {
+        if (ac.id !== aircraftId) return ac;
+        return {
+          ...ac,
+          status: "unavailable" as AircraftStatus,
+          maintenanceType: maintenanceTypeKey as any,
+          maintenanceTimeRemaining: repairTime,
+        };
+      }),
+    };
+  });
+
+  return addEvent({ ...state, bases: updatedBases }, {
+    type: "warning",
+    message: `🔴 ${aircraftId} NMC — ${actionLabel} (${repairTime}h) — ej i hangar`,
+    base: baseId,
+  });
+}
+
+function handlePauseMaintenance(state: GameState, baseId: string, aircraftId: string): GameState {
+  const updatedBases = state.bases.map((base) => {
+    if (base.id !== baseId) return base;
+    const aircraft = base.aircraft.map((ac) => {
+      if (ac.id !== aircraftId || ac.status !== "under_maintenance") return ac;
+      // Pause: work stops, aircraft returns to unavailable (fault still present)
+      return { ...ac, status: "unavailable" as AircraftStatus };
+    });
+    const maintCount = aircraft.filter((a) => a.status === "under_maintenance").length;
+    return {
+      ...base,
+      aircraft,
+      maintenanceBays: { ...base.maintenanceBays, occupied: Math.min(maintCount, base.maintenanceBays.total) },
+    };
+  });
+
+  return addEvent({ ...state, bases: updatedBases }, {
+    type: "warning",
+    message: `⏸ Underhåll pausat på ${aircraftId} — arbetet återupptas manuellt`,
     base: baseId,
   });
 }

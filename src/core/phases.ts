@@ -3,7 +3,6 @@ import { isMissionCapable } from "@/types/game";
 import { getPhaseForDay } from "@/data/config/scenario";
 import { generateATOOrders } from "@/data/initialGameState";
 import { FUEL_DRAIN_RATE } from "@/data/config/capacities";
-import { rollRandomFailure, rollFailureType, rollIsCriticalFailure, rollQuickFailureType } from "./stochastics";
 import { generateRecommendations } from "./recommendations";
 
 /** Handle a specific phase, returning the updated state */
@@ -119,56 +118,8 @@ function handlePrepareStatusCards(state: GameState): GameState {
 }
 
 function handleExecutePreparation(state: GameState): GameState {
-  const newEvents: GameEvent[] = [];
-
-  const updatedBases = state.bases.map((base) => {
-    const updatedAircraft = base.aircraft.map((ac) => {
-      // Random failure on ready aircraft — MTBF-gated (no failures before 15 flight hours)
-      if (ac.status === "ready" && rollRandomFailure(ac.flightHours)) {
-        if (rollIsCriticalFailure()) {
-          // Red: critical failure → unavailable (NMC)
-          const { type: failType, time: failTime } = rollFailureType();
-          newEvents.push({
-            id: crypto.randomUUID(),
-            timestamp: `Dag ${state.day} ${String(state.hour).padStart(2, "0")}:00`,
-            type: "critical",
-            message: `🔴 KRITISKT FEL: ${ac.tailNumber} — ${failType} (${failTime}h) — NMC`,
-            base: base.id,
-          });
-          return {
-            ...ac,
-            status: "unavailable" as AircraftStatus,
-            maintenanceType: failType,
-            maintenanceTimeRemaining: failTime,
-          };
-        } else {
-          // Yellow: minor failure → under_maintenance 2–4h
-          const { type: failType, time: failTime } = rollQuickFailureType();
-          newEvents.push({
-            id: crypto.randomUUID(),
-            timestamp: `Dag ${state.day} ${String(state.hour).padStart(2, "0")}:00`,
-            type: "warning",
-            message: `🟡 Underhållsbehov: ${ac.tailNumber} — ${failType} (${failTime}h)`,
-            base: base.id,
-          });
-          return {
-            ...ac,
-            status: "under_maintenance" as AircraftStatus,
-            maintenanceType: failType,
-            maintenanceTimeRemaining: failTime,
-          };
-        }
-      }
-      return ac;
-    });
-    return { ...base, aircraft: updatedAircraft };
-  });
-
-  return {
-    ...state,
-    bases: updatedBases,
-    events: [...newEvents, ...state.events].slice(0, 50),
-  };
+  // Random failures removed — health-based degradation handles aircraft condition
+  return state;
 }
 
 function handleReportOutcome(state: GameState): GameState {
@@ -202,6 +153,7 @@ function handleUpdateMaintenancePlan(state: GameState): GameState {
           return {
             ...ac,
             status: "ready" as AircraftStatus,
+            health: 100,
             maintenanceTimeRemaining: undefined,
             maintenanceType: undefined,
             maintenanceTask: undefined,
@@ -245,11 +197,26 @@ function handleIncrementTime(state: GameState): GameState {
     });
   }
 
-  // Fuel drain
+  // Fuel drain + per-aircraft health wear
   const fuelDrain = FUEL_DRAIN_RATE[nextPhase] ?? 0.5;
   const updatedBases = state.bases.map((base) => ({
     ...base,
     fuel: Math.max(0, base.fuel - fuelDrain),
+    aircraft: base.aircraft.map((ac) => {
+      let wear = 0;
+      if (ac.status === "ready" || ac.status === "allocated") {
+        wear = Math.floor(Math.random() * 3) + 1; // 1–3% passive
+      } else if (ac.status === "on_mission") {
+        wear = Math.floor(Math.random() * 11) + 10; // 10–20% mission wear
+      }
+      if (wear === 0) return ac;
+      const newHealth = Math.max(0, (ac.health ?? 100) - wear);
+      // Aircraft that hit 0% health become NMC
+      if (newHealth === 0 && (ac.status === "ready" || ac.status === "allocated")) {
+        return { ...ac, health: 0, status: "unavailable" as AircraftStatus };
+      }
+      return { ...ac, health: newHealth };
+    }),
   }));
 
   // Generate new ATO on day rollover
@@ -269,7 +236,7 @@ function handleIncrementTime(state: GameState): GameState {
     return o;
   });
 
-  // Also collect drag-drop aircraft whose missionEndHour has been reached
+  // Set returning aircraft to "returning" status — LandingReceptionModal handles resolution
   const basesAfterReturn = updatedBases.map((base) => ({
     ...base,
     aircraft: base.aircraft.map((ac) => {

@@ -77,13 +77,21 @@ const AC_LABEL: Record<string, string> = {
   unavailable: "NMC",
 };
 
-// Plane silhouette color = remaining-life battery indicator
+// Plane silhouette color based on health %
 function getAircraftColor(ac: Aircraft): string {
   if (ac.status === "under_maintenance") return "#D7AB3A";
   if (ac.status === "unavailable") return "#D9192E";
-  if (ac.hoursToService <= 20) return "#D9192E";
-  if (ac.hoursToService < 50) return "#D7AB3A";
-  return "#0C234C";
+  const h = ac.health ?? 100;
+  if (h <= 20) return "#CC2222";          // deep red — NMC / critical
+  if (h <= 50) return "#E07800";          // warm orange — degraded
+  return "#0C234C";                        // blue — operational
+}
+
+// Health color for text/bar display — readable against light background
+function getHealthColor(health: number): string {
+  if (health <= 20) return "#CC2222";   // deep red
+  if (health <= 50) return "#E07800";   // warm orange (readable)
+  return "#33C45A";                      // deep green (not neon)
 }
 
 // Aircraft image using Jase_transparent.png, tinted by status color, centered at (cx,cy)
@@ -286,20 +294,23 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome }: BaseMapProps)
                   <ellipse cx={cx} cy={cy} rx="16" ry="12" fill="none" stroke="#D7AB3A" strokeWidth="1.5" strokeDasharray="3 2" />
                 )}
                 <AircraftImage cx={cx} cy={cy} color={color} />
-                {/* Battery bar */}
+                {/* Health % bar */}
                 {(() => {
-                  const battPct = Math.min(1, ac.hoursToService / 100);
-                  const battColor = ac.hoursToService <= 20 ? "#D9192E" : ac.hoursToService < 50 ? "#D7AB3A" : "#0C234C";
-                  const bX = cx - 11, bY = cy + 15, bW = 22, bH = 5;
+                  const hp = ac.health ?? 100;
+                  const hColor = getHealthColor(hp);
+                  const bX = cx - 13, bY = cy + 14, bW = 26, bH = 6;
                   return (
                     <g>
-                      <rect x={bX} y={bY} width={bW} height={bH} rx={1.5} fill="rgba(255,255,255,0.5)" stroke="#0C234C" strokeWidth={0.6} opacity={0.7} />
-                      <rect x={bX + bW} y={bY + 1.2} width={2} height={bH - 2.4} rx={0.5} fill="#0C234C" opacity={0.5} />
-                      <rect x={bX + 1} y={bY + 1} width={Math.max(0, (bW - 2) * battPct)} height={bH - 2} rx={1} fill={battColor} />
+                      <rect x={bX} y={bY} width={bW} height={bH} rx={2} fill="#111" stroke="#333" strokeWidth={0.8} />
+                      <rect x={bX + 1} y={bY + 1} width={Math.max(0, (bW - 2) * (hp / 100))} height={bH - 2} rx={1.5} fill={hColor} />
+                      {/* Health % text */}
+                      <text x={cx} y={bY + bH + 9} textAnchor="middle" fontSize="7" fill={hColor} fontFamily="monospace" fontWeight="bold">
+                        {hp}%
+                      </text>
                     </g>
                   );
                 })()}
-                {/* Label */}
+                {/* Tail label */}
                 <g>
                   <rect x={cx - 18} y={cy - 28} width="36" height="13" rx="2"
                     fill={color === "#0C234C" ? "#0C234C" : "#fff"} fillOpacity="0.92"

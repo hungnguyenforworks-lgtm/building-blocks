@@ -167,6 +167,9 @@ export type GameAction =
   | { type: "SEND_MISSION_DROP"; baseId: BaseType; aircraftId: string; missionType: MissionType; durationHours?: number }
   | { type: "APPLY_UTFALL_OUTCOME"; baseId: BaseType; aircraftId: string; repairTime: number; maintenanceTypeKey: string; weaponLoss: number; actionLabel: string }
   | { type: "COMPLETE_LANDING_CHECK"; baseId: BaseType; aircraftId: string; sendToMaintenance: boolean; repairTime?: number; maintenanceTypeKey?: string; weaponLoss?: number; actionLabel?: string }
+  | { type: "HANGAR_DROP_CONFIRM"; baseId: BaseType; aircraftId: string; repairTime: number; maintenanceTypeKey: string; restoreHealth: boolean }
+  | { type: "PAUSE_MAINTENANCE"; baseId: BaseType; aircraftId: string }
+  | { type: "MARK_FAULT_NMC"; baseId: BaseType; aircraftId: string; repairTime: number; maintenanceTypeKey: string; actionLabel: string }
   | { type: "RESET_GAME" };
 
 // ── Core interfaces ───────────────────────────────────────────────────────
@@ -178,6 +181,7 @@ export interface Aircraft {
   currentBase: BaseType;
   flightHours: number;
   hoursToService: number;
+  health: number; // 0–100%; 0 = NMC (red), >30 = flyable (blue)
   currentMission?: MissionType;
   missionEndHour?: number; // hour at which drag-drop mission completes
   payload?: string;

@@ -29,6 +29,7 @@ const createAircraft = (base: string, type: AircraftType, prefix: string, count:
     currentBase: base as any,
     flightHours: Math.round(Math.random() * 80 + 10),
     hoursToService: Math.round(Math.random() * 60 + 20),
+    health: Math.round(Math.random() * 20 + 80), // start 80–100%
   }));
 
 const createZones = (baseType: "huvudbas" | "sidobas" | "reservbas", baseId: string): BaseZone[] => {

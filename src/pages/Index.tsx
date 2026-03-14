@@ -17,14 +17,19 @@ import { RemainingLifeGraf } from "@/components/dashboard/RemainingLifeGraf";
 import { BaseMap, DropZone } from "@/components/game/BaseMap";
 import { LandingReceptionModal } from "@/components/game/LandingReceptionModal";
 import { RunwayCheckModal } from "@/components/game/RunwayCheckModal";
+import { MaintenanceConfirmModal } from "@/components/game/MaintenanceConfirmModal";
+import { HangarFullModal } from "@/components/game/HangarFullModal";
 import { toast } from "sonner";
 import { BaseType } from "@/types/game";
 import { ShieldCheck, Crosshair, Hammer, Users, Siren, Clock, MapPin, PlaneTakeoff } from "lucide-react";
 
 const Index = () => {
-  const { state, advanceTurn, startMaintenance, sendOnMission, getResourceSummary, resetGame, moveAircraftToMaintenance, sendMissionDrop, applyUtfallOutcome, completeLandingCheck, applyRecommendation, dismissRecommendation } = useGame();
+  const { state, advanceTurn, startMaintenance, sendOnMission, getResourceSummary, resetGame, moveAircraftToMaintenance, sendMissionDrop, applyUtfallOutcome, completeLandingCheck, applyRecommendation, dismissRecommendation, hangarDropConfirm, pauseMaintenance, markFaultNMC } = useGame();
   const [selectedBaseId, setSelectedBaseId] = useState<BaseType>("MOB");
   const [pendingRunwayCheck, setPendingRunwayCheck] = useState<string | null>(null);
+  const [pendingMaintenanceCheck, setPendingMaintenanceCheck] = useState<string | null>(null);
+  const [redRunwayWarning, setRedRunwayWarning] = useState<string | null>(null);
+  const [hangarFullWarning, setHangarFullWarning] = useState<string | null>(null);
 
   const selectedBase = state.bases.find((b) => b.id === selectedBaseId)!;
 
@@ -44,6 +49,10 @@ const Index = () => {
         toast.error(`${tail} är inte MC — kan ej sändas på uppdrag`);
         return;
       }
+      if ((aircraft.health ?? 100) <= 30) {
+        setRedRunwayWarning(aircraftId);
+        return;
+      }
       setPendingRunwayCheck(aircraftId);
       return;
 
@@ -53,11 +62,17 @@ const Index = () => {
         return;
       }
       if (selectedBase.maintenanceBays.occupied >= selectedBase.maintenanceBays.total) {
-        toast.error("Alla underhållsplatser är upptagna!");
+        setHangarFullWarning(aircraftId);
         return;
       }
-      moveAircraftToMaintenance(selectedBaseId, aircraftId);
-      toast.success(`🔧 ${tail} skickad till underhållshangar`);
+      // Known fault (from runway ignore or landing check) — skip dice, place directly
+      if (aircraft.status === "unavailable" && aircraft.maintenanceTimeRemaining != null && aircraft.maintenanceType != null) {
+        hangarDropConfirm(selectedBaseId, aircraftId, aircraft.maintenanceTimeRemaining, aircraft.maintenanceType, false);
+        toast.success(`🔧 ${tail} → ${aircraft.maintenanceType} (${aircraft.maintenanceTimeRemaining}h) — direkt till hangar`);
+        return;
+      }
+      setPendingMaintenanceCheck(aircraftId);
+      return;
 
     } else if (zone === "spareparts") {
       if (aircraft.status === "on_mission") {
@@ -352,9 +367,112 @@ const Index = () => {
             setPendingRunwayCheck(null);
             toast.error(`🔧 ${runwayAircraft.tailNumber} → Service: ${label} (${repairTime}h)`);
           }}
+          onIgnoreFault={(repairTime, typeKey, actionLabel) => {
+            markFaultNMC(selectedBaseId, pendingRunwayCheck, repairTime, typeKey, actionLabel);
+            setPendingRunwayCheck(null);
+            toast.warning(`🔴 ${runwayAircraft.tailNumber} NMC — fel ignorerat, ej i hangar`);
+          }}
           onClose={() => setPendingRunwayCheck(null)}
         />
       )}
+
+      {/* Red aircraft runway warning */}
+      {redRunwayWarning && (() => {
+        const ac = selectedBase.aircraft.find((a) => a.id === redRunwayWarning);
+        if (!ac) return null;
+        return (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.75)" }}>
+            <div className="w-[420px] rounded-2xl overflow-hidden shadow-2xl" style={{ background: "#1a0505", border: "2px solid #D9192E" }}>
+              <div className="px-6 py-4 flex items-center gap-3" style={{ background: "#0d0202", borderBottom: "1px solid #D9192E44" }}>
+                <span className="text-2xl">🚨</span>
+                <div>
+                  <div className="text-xs font-mono font-bold" style={{ color: "#D9192E" }}>FLYGPLAN EJ OPERATIVT — NMC</div>
+                  <div className="text-base font-mono font-black text-white">{ac.tailNumber}</div>
+                </div>
+                <div className="ml-auto text-right">
+                  <div className="text-xs font-mono" style={{ color: "#8899bb" }}>Hälsa</div>
+                  <div className="text-2xl font-black font-mono" style={{ color: "#D9192E" }}>{ac.health ?? 0}%</div>
+                </div>
+              </div>
+              <div className="px-6 py-5 space-y-4">
+                <div className="rounded-xl p-4" style={{ background: "#3a0a0a", border: "1px solid #6a1a1a" }}>
+                  <div className="text-sm font-mono font-bold mb-2" style={{ color: "#ff6655" }}>
+                    Flygplanet är inte flygtillståndsklarat!
+                  </div>
+                  <div className="text-xs font-mono" style={{ color: "#ccd4e8" }}>
+                    {ac.tailNumber} har {ac.health ?? 0}% hälsa och är röd NMC.
+                    Det måste genomgå felsökning och service innan det kan flyga.
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => { setRedRunwayWarning(null); setPendingMaintenanceCheck(ac.id); }}
+                    className="flex-1 py-3 rounded-xl font-mono font-bold text-sm transition-all hover:brightness-110 active:scale-95"
+                    style={{ background: "#5a1a1a", border: "1px solid #D9192E", color: "#ff6655" }}
+                  >
+                    🔧 Skicka till service
+                  </button>
+                  <button
+                    onClick={() => setRedRunwayWarning(null)}
+                    className="px-5 py-3 rounded-xl font-mono font-bold text-sm transition-all hover:brightness-110 active:scale-95"
+                    style={{ background: "#2a2a3a", border: "1px solid #5566aa", color: "#8899cc" }}
+                  >
+                    Ignorera
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Hangar Full Modal */}
+      {hangarFullWarning && (() => {
+        const incoming = selectedBase.aircraft.find((a) => a.id === hangarFullWarning);
+        const inMaint = selectedBase.aircraft.filter((a) => a.status === "under_maintenance");
+        if (!incoming) return null;
+        return (
+          <HangarFullModal
+            key={hangarFullWarning}
+            incomingAircraft={incoming}
+            maintenanceAircraft={inMaint}
+            baseId={selectedBaseId}
+            onPause={(pauseId) => {
+              pauseMaintenance(selectedBaseId, pauseId);
+              setHangarFullWarning(null);
+              // If incoming has a known fault, skip dice and place directly
+              if (incoming.status === "unavailable" && incoming.maintenanceTimeRemaining != null && incoming.maintenanceType != null) {
+                hangarDropConfirm(selectedBaseId, incoming.id, incoming.maintenanceTimeRemaining, incoming.maintenanceType, false);
+                toast.success(`🔧 ${incoming.tailNumber} → direkt till hangar (${incoming.maintenanceTimeRemaining}h)`);
+              } else {
+                setPendingMaintenanceCheck(incoming.id);
+              }
+              toast.info(`⏸ Underhåll pausat på ${pauseId} — ${incoming.tailNumber} köas`);
+            }}
+            onIgnore={() => setHangarFullWarning(null)}
+          />
+        );
+      })()}
+
+      {/* Maintenance Confirmation Modal */}
+      {pendingMaintenanceCheck && (() => {
+        const ac = selectedBase.aircraft.find((a) => a.id === pendingMaintenanceCheck);
+        if (!ac) return null;
+        return (
+          <MaintenanceConfirmModal
+            key={pendingMaintenanceCheck}
+            aircraft={ac}
+            baseId={selectedBaseId}
+            onConfirm={(repairTime, typeKey, restoreHealth) => {
+              hangarDropConfirm(selectedBaseId, pendingMaintenanceCheck, repairTime, typeKey, restoreHealth);
+              setPendingMaintenanceCheck(null);
+              const label = restoreHealth ? "Förebyggande service" : "Reparation";
+              toast.success(`🔧 ${ac.tailNumber} → ${label} (${repairTime}h)`);
+            }}
+            onCancel={() => setPendingMaintenanceCheck(null)}
+          />
+        );
+      })()}
 
       {/* Landing Reception Modal */}
       {firstReturning && (
@@ -373,6 +491,7 @@ const Index = () => {
           }}
         />
       )}
+
     </div>
   );
 };
