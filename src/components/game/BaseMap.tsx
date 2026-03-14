@@ -297,12 +297,17 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome, overdueAircraft
                     <ellipse cx={cx} cy={cy} rx="22" ry="17" fill="none" stroke="#FF6B00" strokeWidth="2" strokeDasharray="4 2" opacity="0.9">
                       <animate attributeName="stroke-opacity" values="0.9;0.2;0.9" dur="1s" repeatCount="indefinite" />
                     </ellipse>
-                    {/* Mission badge */}
-                    <rect x={cx + 10} y={cy - 38} width={overdueMissionLabels[ac.id] ? Math.max(28, overdueMissionLabels[ac.id].length * 5 + 8) : 28} height="11" rx="2.5" fill="#FF6B00" />
-                    <text x={cx + 10 + (overdueMissionLabels[ac.id] ? Math.max(28, overdueMissionLabels[ac.id].length * 5 + 8) : 28) / 2}
-                      y={cy - 30} textAnchor="middle" fontSize="6" fill="white" fontFamily="monospace" fontWeight="bold">
-                      {overdueMissionLabels[ac.id] ?? "NU!"}
-                    </text>
+                    {/* Mission badge — centered below the plane */}
+                    {(() => {
+                      const label = overdueMissionLabels[ac.id] ?? "NU!";
+                      const bw = Math.max(28, label.length * 5 + 8);
+                      return (
+                        <>
+                          <rect x={cx - bw / 2} y={cy + 14} width={bw} height="11" rx="2.5" fill="#FF6B00" />
+                          <text x={cx} y={cy + 22} textAnchor="middle" fontSize="6" fill="white" fontFamily="monospace" fontWeight="bold">{label}</text>
+                        </>
+                      );
+                    })()}
                   </g>
                 )}
                 {/* Tail label */}
