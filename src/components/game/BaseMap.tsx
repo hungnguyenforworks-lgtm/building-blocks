@@ -8,8 +8,6 @@ import {
   Users,
   Wrench,
   AlertTriangle,
-  Plane,
-  Dice6,
 } from "lucide-react";
 import { UtfallModal } from "./UtfallModal";
 
@@ -100,8 +98,8 @@ function AircraftImage({ cx, cy, color = "#0C234C", opacity = 1 }: { cx: number;
   return (
     <image
       href="/Jase_transparent.png"
-      x={cx - 18} y={cy - 14}
-      width="36" height="28"
+      x={cx - 26} y={cy - 20}
+      width="52" height="40"
       opacity={opacity}
       filter={`url(#${filterId})`}
     />
@@ -171,7 +169,7 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome }: BaseMapProps)
   // Apron shows only parked planes (MC and NMC). On-mission → runway. Maintenance → hangars.
   const apronAircraft = base.aircraft
     .filter((a) => a.status === "ready" || a.status === "unavailable")
-    .slice(0, 16);
+    .slice(0, 32);
   const cols = 16;
 
   return (
@@ -267,9 +265,8 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome }: BaseMapProps)
           {/* Aircraft icons on apron */}
           {apronAircraft.map((ac, i) => {
             const col = i % cols;
-            const row = Math.floor(i / cols);
-            const cx = 80 + col * 46;
-            const cy = 258 + row * 44;
+            const cx = 60 + (col + 0.5) * (780 / cols);
+            const cy = 263;
             const color = getAircraftColor(ac);
             const isSelAc = selectedAcId === ac.id;
             return (
@@ -291,35 +288,34 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome }: BaseMapProps)
                 }}
               >
                 {isSelAc && (
-                  <ellipse cx={cx} cy={cy} rx="16" ry="12" fill="none" stroke="#D7AB3A" strokeWidth="1.5" strokeDasharray="3 2" />
+                  <ellipse cx={cx} cy={cy} rx="20" ry="15" fill="none" stroke="#D7AB3A" strokeWidth="1.5" strokeDasharray="3 2" />
                 )}
+                {/* Tail label */}
+                <rect x={cx - 22} y={cy - 35} width="44" height="13" rx="2"
+                  fill={color === "#0C234C" ? "#0C234C" : "#fff"} fillOpacity="0.92"
+                  stroke={color} strokeWidth="0.8" />
+                <text x={cx} y={cy - 26} textAnchor="middle" fontSize="6.5"
+                  fill={color === "#0C234C" ? "#D7AB3A" : color} fontFamily="monospace" fontWeight="bold">
+                  {ac.tailNumber}
+                </text>
                 <AircraftImage cx={cx} cy={cy} color={color} />
-                {/* Health % bar */}
+                {/* Health % bar (always visible) */}
                 {(() => {
                   const hp = ac.health ?? 100;
                   const hColor = getHealthColor(hp);
-                  const bX = cx - 13, bY = cy + 14, bW = 26, bH = 6;
+                  const bX = cx - 18, bY = cy + 23, bW = 36, bH = 6;
                   return (
                     <g>
-                      <rect x={bX} y={bY} width={bW} height={bH} rx={2} fill="#111" stroke="#333" strokeWidth={0.8} />
-                      <rect x={bX + 1} y={bY + 1} width={Math.max(0, (bW - 2) * (hp / 100))} height={bH - 2} rx={1.5} fill={hColor} />
-                      {/* Health % text */}
-                      <text x={cx} y={bY + bH + 9} textAnchor="middle" fontSize="7" fill={hColor} fontFamily="monospace" fontWeight="bold">
+                      <rect x={bX} y={bY} width={bW} height={bH} rx={1.5}
+                        fill="rgba(0,0,0,0.55)" stroke="#333" strokeWidth={0.5} />
+                      <rect x={bX + 1} y={bY + 1} width={Math.max(0, (bW - 2) * (hp / 100))} height={bH - 2}
+                        rx={1} fill={hColor} />
+                      <text x={cx} y={bY + bH + 8} textAnchor="middle" fontSize="7" fill={hColor} fontFamily="monospace" fontWeight="bold">
                         {hp}%
                       </text>
                     </g>
                   );
                 })()}
-                {/* Tail label */}
-                <g>
-                  <rect x={cx - 18} y={cy - 28} width="36" height="13" rx="2"
-                    fill={color === "#0C234C" ? "#0C234C" : "#fff"} fillOpacity="0.92"
-                    stroke={color} strokeWidth="0.8" />
-                  <text x={cx} y={cy - 19} textAnchor="middle" fontSize="6.5"
-                    fill={color === "#0C234C" ? "#D7AB3A" : color} fontFamily="monospace" fontWeight="bold">
-                    {ac.tailNumber}
-                  </text>
-                </g>
               </g>
             );
           })}
@@ -651,9 +647,8 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome }: BaseMapProps)
             if (acIdx < 0) return null;
             const ac = apronAircraft[acIdx];
             const col = acIdx % cols;
-            const row = Math.floor(acIdx / cols);
-            const cx = 80 + col * 46;
-            const cy = 258 + row * 44;
+            const cx = 60 + (col + 0.5) * (780 / cols);
+            const cy = 263;
 
             const pw = 195, ph = 225;
             const acColor = getAircraftColor(ac);
@@ -1115,117 +1110,3 @@ function SparePartsDetail({ base }: { base: Base }) {
   );
 }
 
-function AircraftDetail({ ac }: { ac: Aircraft }) {
-  const color = AC_COLOR[ac.status];
-  const pct = Math.min(100, (ac.hoursToService / 100) * 100);
-  const isCritical = ac.hoursToService < 20;
-  const isLow = ac.hoursToService < 40;
-  const barColor = isCritical ? "#dc2626" : isLow ? "#d97706" : "#16a34a";
-
-  const statusLabels: Record<string, string> = {
-    ready: "Mission Capable",
-    allocated: "Tilldelad",
-    in_preparation: "Klargöring",
-    awaiting_launch: "Väntar Start",
-    on_mission: "På Uppdrag",
-    returning: "Retur",
-    recovering: "Mottagning",
-    under_maintenance: "Underhåll",
-    unavailable: "Ej Operativ",
-  };
-
-  return (
-    <div className="space-y-4">
-      {/* Status header */}
-      <div className="flex items-center gap-4">
-        {/* Aircraft silhouette icon */}
-        <svg width="80" height="40" viewBox="-20 -20 80 40">
-          <path
-            d={`M -15,0 L -12,-2.5 L 10,-1 L 14,0 L 10,1 L -12,2.5 Z`}
-            fill={color}
-          />
-          <polygon points="2,-2 -8,-13 -12,-3 -3,-2" fill={color} opacity="0.88" />
-          <polygon points="2,2 -8,13 -12,3 -3,2" fill={color} opacity="0.88" />
-          <polygon points="-8,-2 -10,-7 -5,-6 -5,-2" fill={color} opacity="0.82" />
-          <polygon points="-8,2 -10,7 -5,6 -5,2" fill={color} opacity="0.82" />
-          <rect x="11" y="-2.5" width="4" height="5" rx="2" fill={color} opacity="0.7" />
-        </svg>
-
-        <div>
-          <div className="text-lg font-black font-mono" style={{ color }}>
-            {ac.tailNumber}
-          </div>
-          <div className="text-xs text-muted-foreground font-mono">{ac.type}</div>
-          <div
-            className="text-[10px] font-mono font-bold mt-0.5 px-2 py-0.5 rounded-full inline-block border"
-            style={{ color, borderColor: `${color}40`, backgroundColor: `${color}10` }}
-          >
-            {statusLabels[ac.status]}
-          </div>
-        </div>
-      </div>
-
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-        {[
-          { label: "TOTAL FLYGTID", value: `${ac.flightHours}h` },
-          { label: "TILL SERVICE", value: `${ac.hoursToService}h`, urgent: isCritical || isLow },
-          { label: "UPPDRAG", value: ac.currentMission || "—" },
-          { label: "UH-TYP", value: ac.maintenanceType ? ac.maintenanceType.replace(/_/g, " ") : "—" },
-        ].map((item) => (
-          <div key={item.label} className="bg-muted/30 border border-border rounded-lg p-2.5">
-            <div className="text-[8px] text-muted-foreground font-mono mb-1">{item.label}</div>
-            <div
-              className={`text-sm font-black font-mono ${item.urgent ? "" : "text-foreground"}`}
-              style={item.urgent ? { color: barColor } : {}}
-            >
-              {item.value}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Remaining life bar */}
-      <div>
-        <div className="flex justify-between text-[9px] font-mono text-muted-foreground mb-1">
-          <span>REMAINING LIFE (till 100h-service)</span>
-          <span style={{ color: barColor }} className="font-bold">{ac.hoursToService}h kvar</span>
-        </div>
-        <div className="h-3 bg-muted rounded-full overflow-hidden">
-          <motion.div
-            className="h-full rounded-full"
-            style={{ backgroundColor: barColor }}
-            initial={{ width: 0 }}
-            animate={{ width: `${pct}%` }}
-            transition={{ duration: 0.5 }}
-          />
-        </div>
-        {isCritical && (
-          <div className="text-[9px] text-red-600 font-mono mt-1 font-bold">
-            ⚠ KRITISK NIVÅ — Ta in för service omedelbart
-          </div>
-        )}
-        {isLow && !isCritical && (
-          <div className="text-[9px] text-amber-600 font-mono mt-1">
-            Planera service inom kort
-          </div>
-        )}
-      </div>
-
-      {/* Maintenance details if applicable */}
-      {(ac.maintenanceType || ac.maintenanceTimeRemaining !== undefined) && (
-        <div className="flex gap-4 text-[10px] font-mono bg-amber-50 border border-amber-200/60 rounded-lg p-2.5">
-          <Wrench className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-          <div>
-            {ac.maintenanceType && (
-              <div><span className="text-muted-foreground">Typ: </span><span className="font-bold">{ac.maintenanceType.replace(/_/g, " ")}</span></div>
-            )}
-            {ac.maintenanceTimeRemaining !== undefined && (
-              <div><span className="text-muted-foreground">Tid kvar: </span><span className="font-bold text-amber-700">{ac.maintenanceTimeRemaining}h</span></div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}

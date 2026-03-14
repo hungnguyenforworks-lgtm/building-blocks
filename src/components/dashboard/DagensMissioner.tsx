@@ -1,4 +1,4 @@
-import { Base, MissionType, ScenarioPhase } from "@/types/game";
+import { ATOOrder, Base, MissionType, ScenarioPhase } from "@/types/game";
 import { Shield, Target, Eye, Radio, Plane, Zap, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -6,6 +6,7 @@ interface DagensMissionerProps {
   base: Base;
   hour: number;
   phase: ScenarioPhase;
+  atoOrders?: ATOOrder[];
 }
 
 interface MissionSummary {
@@ -78,8 +79,17 @@ const statusDef = {
   },
 };
 
-export function DagensMissioner({ base, hour, phase }: DagensMissionerProps) {
-  const missions = getMissions(base, hour, phase);
+export function DagensMissioner({ base, hour, phase, atoOrders }: DagensMissionerProps) {
+  const missions: MissionSummary[] = atoOrders && atoOrders.length > 0
+    ? atoOrders.map((o) => ({
+        type: o.missionType,
+        label: o.label,
+        time: `${String(o.startHour).padStart(2, "0")}:00–${String(o.endHour).padStart(2, "0")}:00`,
+        aircraft: o.requiredCount,
+        status: o.status === "dispatched" ? "active" : o.status === "completed" ? "completed" : "planned",
+        priority: o.priority,
+      }))
+    : getMissions(base, hour, phase);
   const aktiva = missions.filter((m) => m.status === "active").length;
   const completed = missions.filter((m) => m.status === "completed").length;
 

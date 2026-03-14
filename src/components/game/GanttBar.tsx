@@ -38,7 +38,7 @@ export function GanttBar({
         borderLeft: isActive ? `3px solid ${color}` : `1px solid ${color}50`,
         minWidth: "20px",
       }}
-      onClick={onClick}
+      onClick={(e) => { e.stopPropagation(); onClick?.(); }}
       title={`${label} (${String(startHour).padStart(2, "0")}:00–${String(endHour).padStart(2, "0")}:00)`}
     >
       <span

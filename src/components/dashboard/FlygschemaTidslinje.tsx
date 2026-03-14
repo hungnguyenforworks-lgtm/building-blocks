@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Base, Aircraft } from "@/types/game";
+import { ATOOrder, Base, Aircraft } from "@/types/game";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface FlygschemaTidslinjeProps {
   base: Base;
   hour: number;
+  atoOrders?: ATOOrder[];
 }
 
 interface Slot {
@@ -17,8 +18,20 @@ interface Slot {
 
 const MISSION_TYPES = ["QRA", "DCA", "RECCE", "AI_DT", "ESCORT", "AEW"];
 
-function getSlots(ac: Aircraft, hour: number): Slot[] {
+function getSlots(ac: Aircraft, hour: number, atoOrders?: ATOOrder[]): Slot[] {
   const hash = parseInt(ac.id.replace(/\D/g, "")) || 1;
+
+  const assignedOrder = atoOrders?.find(
+    (o) => o.assignedAircraft.includes(ac.id) && (o.status === "assigned" || o.status === "dispatched")
+  );
+
+  if (assignedOrder && (ac.status === "ready" || ac.status === "on_mission")) {
+    return [
+      { label: "Pre", start: Math.max(6, assignedOrder.startHour - 1), end: assignedOrder.startHour, color: "#7c3aed" },
+      { label: assignedOrder.missionType, start: assignedOrder.startHour, end: assignedOrder.endHour, color: "#2563eb" },
+      { label: "Post-flt", start: assignedOrder.endHour, end: Math.min(22, assignedOrder.endHour + 1), color: "#ea580c" },
+    ];
+  }
 
   if (ac.status === "on_mission") {
     const mStart = Math.max(6, hour - 2);
@@ -60,7 +73,7 @@ function getSlots(ac: Aircraft, hour: number): Slot[] {
   return [];
 }
 
-export function FlygschemaTidslinje({ base, hour }: FlygschemaTidslinjeProps) {
+export function FlygschemaTidslinje({ base, hour, atoOrders }: FlygschemaTidslinjeProps) {
   const [selectedAc, setSelectedAc] = useState<string | null>(null);
 
   const START = 6, END = 22, SPAN = 16;
@@ -112,7 +125,7 @@ export function FlygschemaTidslinje({ base, hour }: FlygschemaTidslinjeProps) {
       {/* Aircraft rows */}
       <div className="space-y-0.5">
         {base.aircraft.map((ac, i) => {
-          const slots = getSlots(ac, hour);
+          const slots = getSlots(ac, hour, atoOrders);
           const isCritical = ac.hoursToService < 20;
           const isLow = ac.hoursToService < 40;
           const isSelected = selectedAc === ac.id;

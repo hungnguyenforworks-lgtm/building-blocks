@@ -1,44 +1,64 @@
 import { useState } from "react";
-import type { MissionType, AircraftType, BaseType, ATOOrder } from "@/types/game";
+import type { Aircraft, MissionType, AircraftType, BaseType, ATOOrder } from "@/types/game";
 import { X, Plus, Save } from "lucide-react";
 
 interface ATOEditorProps {
   order?: ATOOrder; // if editing
-  onSave: (order: Omit<ATOOrder, "id" | "status" | "assignedAircraft">) => void;
+  defaultStartHour?: number; // pre-fill when creating via Gantt click
+  availableAircraft?: Aircraft[]; // only passed when creating new
+  onSave: (order: Omit<ATOOrder, "id" | "status" | "assignedAircraft">, selectedAircraft: string[]) => void;
   onCancel: () => void;
 }
 
 const MISSION_TYPES: MissionType[] = ["DCA", "QRA", "RECCE", "AEW", "AI_DT", "AI_ST", "ESCORT", "TRANSPORT"];
 const AIRCRAFT_TYPES: AircraftType[] = ["GripenE", "GripenF_EA", "GlobalEye", "VLO_UCAV", "LOTUS"];
-const BASES: BaseType[] = ["MOB", "FOB_N", "FOB_S"];
+const BASES: BaseType[] = ["MOB"];
 const PRIORITIES = ["high", "medium", "low"] as const;
 
-export function ATOEditor({ order, onSave, onCancel }: ATOEditorProps) {
+export function ATOEditor({ order, defaultStartHour, availableAircraft, onSave, onCancel }: ATOEditorProps) {
+  const initStart = order?.startHour ?? defaultStartHour ?? 6;
+  const initEnd = order?.endHour ?? (defaultStartHour != null ? defaultStartHour + 2 : 12);
   const [missionType, setMissionType] = useState<MissionType>(order?.missionType ?? "DCA");
   const [label, setLabel] = useState(order?.label ?? "");
-  const [startHour, setStartHour] = useState(order?.startHour ?? 6);
-  const [endHour, setEndHour] = useState(order?.endHour ?? 12);
+  const [startHour, setStartHour] = useState(initStart);
+  const [endHour, setEndHour] = useState(initEnd);
   const [requiredCount, setRequiredCount] = useState(order?.requiredCount ?? 2);
   const [aircraftType, setAircraftType] = useState<AircraftType | "">(order?.aircraftType ?? "");
   const [payload, setPayload] = useState(order?.payload ?? "");
   const [launchBase, setLaunchBase] = useState<BaseType>(order?.launchBase ?? "MOB");
   const [priority, setPriority] = useState<"high" | "medium" | "low">(order?.priority ?? "medium");
   const [day, setDay] = useState(order?.day ?? 1);
+  const [selectedAircraftIds, setSelectedAircraftIds] = useState<string[]>([]);
+
+  const filteredAircraft = availableAircraft?.filter(
+    (ac) => !aircraftType || ac.type === aircraftType
+  ) ?? [];
+
+  function toggleAircraft(id: string) {
+    setSelectedAircraftIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= requiredCount) return prev;
+      return [...prev, id];
+    });
+  }
 
   const handleSubmit = () => {
-    onSave({
-      day,
-      missionType,
-      label: label || `${missionType}-uppdrag`,
-      startHour,
-      endHour,
-      requiredCount,
-      aircraftType: aircraftType || undefined,
-      payload: payload || undefined,
-      launchBase,
-      priority,
-      sortiesPerDay: undefined,
-    });
+    onSave(
+      {
+        day,
+        missionType,
+        label: label || `${missionType}-uppdrag`,
+        startHour,
+        endHour,
+        requiredCount,
+        aircraftType: aircraftType || undefined,
+        payload: payload || undefined,
+        launchBase,
+        priority,
+        sortiesPerDay: undefined,
+      },
+      selectedAircraftIds
+    );
   };
 
   const fieldStyle = {
@@ -50,12 +70,12 @@ export function ATOEditor({ order, onSave, onCancel }: ATOEditorProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "hsl(220 63% 10% / 0.5)" }}>
       <div
-        className="w-full max-w-lg rounded-xl overflow-hidden shadow-2xl"
-        style={{ background: "hsl(0 0% 100%)", border: "1px solid hsl(215 14% 84%)" }}
+        className="w-full max-w-lg rounded-xl overflow-hidden shadow-2xl flex flex-col"
+        style={{ background: "hsl(0 0% 100%)", border: "1px solid hsl(215 14% 84%)", maxHeight: "90vh" }}
       >
         {/* Header */}
         <div
-          className="px-5 py-3 flex items-center justify-between"
+          className="px-5 py-3 flex items-center justify-between shrink-0"
           style={{
             background: "hsl(220 63% 18%)",
             borderBottom: "2px solid hsl(42 64% 53% / 0.5)",
@@ -73,7 +93,7 @@ export function ATOEditor({ order, onSave, onCancel }: ATOEditorProps) {
         </div>
 
         {/* Form */}
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-4 overflow-y-auto flex-1">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-[10px] font-mono font-bold block mb-1" style={{ color: "hsl(218 15% 45%)" }}>UPPDRAGSTYP</label>
@@ -142,7 +162,7 @@ export function ATOEditor({ order, onSave, onCancel }: ATOEditorProps) {
                 min={1}
                 max={20}
                 value={requiredCount}
-                onChange={(e) => setRequiredCount(Number(e.target.value))}
+                onChange={(e) => { setRequiredCount(Number(e.target.value)); setSelectedAircraftIds([]); }}
                 className="w-full px-3 py-2 rounded-lg text-xs font-mono"
                 style={fieldStyle}
               />
@@ -154,7 +174,7 @@ export function ATOEditor({ order, onSave, onCancel }: ATOEditorProps) {
               <label className="text-[10px] font-mono font-bold block mb-1" style={{ color: "hsl(218 15% 45%)" }}>FLYGPLANSTYP</label>
               <select
                 value={aircraftType}
-                onChange={(e) => setAircraftType(e.target.value as AircraftType | "")}
+                onChange={(e) => { setAircraftType(e.target.value as AircraftType | ""); setSelectedAircraftIds([]); }}
                 className="w-full px-3 py-2 rounded-lg text-xs font-mono"
                 style={fieldStyle}
               >
@@ -185,11 +205,89 @@ export function ATOEditor({ order, onSave, onCancel }: ATOEditorProps) {
               style={fieldStyle}
             />
           </div>
+
+          {/* Aircraft selection (only when creating new) */}
+          {!order && availableAircraft && (
+            <div
+              style={aircraftType ? {
+                border: "1px solid hsl(42 64% 53% / 0.5)",
+                borderRadius: "0.5rem",
+                padding: "0.75rem",
+                background: "hsl(42 64% 53% / 0.04)",
+              } : {
+                border: "1px dashed hsl(215 14% 80%)",
+                borderRadius: "0.5rem",
+                padding: "0.75rem",
+                background: "hsl(216 18% 98%)",
+              }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[10px] font-mono font-bold" style={{ color: aircraftType ? "hsl(42 64% 40%)" : "hsl(218 15% 55%)" }}>
+                  {aircraftType
+                    ? `VÄLJ SPECIFIKA ${aircraftType.toUpperCase()} FLYGPLAN`
+                    : "VÄLJ SPECIFIKA FLYGPLAN"}
+                </label>
+                {aircraftType && (
+                  <span
+                    className="text-[10px] font-mono font-bold"
+                    style={{ color: selectedAircraftIds.length >= requiredCount ? "hsl(152 60% 38%)" : "hsl(218 15% 50%)" }}
+                  >
+                    {selectedAircraftIds.length} / {requiredCount} valda
+                  </span>
+                )}
+              </div>
+
+              {!aircraftType ? (
+                <div className="text-[10px] font-mono text-center py-2" style={{ color: "hsl(218 15% 60%)" }}>
+                  Välj flygplanstyp ovan för att tilldela specifika flygplan till uppdraget.
+                  <br />
+                  <span style={{ color: "hsl(218 15% 75%)" }}>Tilldelade flygplan visas direkt i flygschema.</span>
+                </div>
+              ) : filteredAircraft.length === 0 ? (
+                <div className="text-[10px] font-mono text-center py-3 rounded-lg"
+                  style={{ color: "hsl(218 15% 55%)", border: "1px dashed hsl(215 14% 86%)" }}>
+                  Inga tillgängliga {aircraftType} vid {launchBase}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-1.5 p-2 rounded-lg" style={{ background: "hsl(216 18% 97%)", border: "1px solid hsl(215 14% 86%)" }}>
+                  {filteredAircraft.map((ac) => {
+                    const selected = selectedAircraftIds.includes(ac.id);
+                    const maxed = !selected && selectedAircraftIds.length >= requiredCount;
+                    return (
+                      <button
+                        key={ac.id}
+                        onClick={() => toggleAircraft(ac.id)}
+                        disabled={maxed}
+                        className="px-2 py-1 rounded text-[9px] font-mono font-bold transition-all"
+                        style={selected ? {
+                          background: "hsl(152 60% 20%)",
+                          border: "1px solid hsl(152 60% 40%)",
+                          color: "hsl(152 60% 70%)",
+                        } : maxed ? {
+                          background: "hsl(216 18% 94%)",
+                          border: "1px solid hsl(215 14% 84%)",
+                          color: "hsl(218 15% 70%)",
+                          opacity: 0.5,
+                        } : {
+                          background: "hsl(0 0% 100%)",
+                          border: "1px solid hsl(42 64% 53% / 0.4)",
+                          color: "hsl(220 63% 25%)",
+                        }}
+                      >
+                        {ac.tailNumber}
+                        <span className="ml-1 opacity-60">{ac.type.replace("Gripen", "G").replace("_EA", "")}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
         <div
-          className="px-5 py-3 flex items-center justify-end gap-2"
+          className="px-5 py-3 flex items-center justify-end gap-2 shrink-0"
           style={{ borderTop: "1px solid hsl(215 14% 88%)", background: "hsl(216 18% 98%)" }}
         >
           <button

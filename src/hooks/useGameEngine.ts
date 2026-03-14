@@ -83,8 +83,8 @@ export function useGameEngine(): GameEngine {
     });
   }, []);
 
-  const createATOOrder = useCallback((order: any) => {
-    dispatch({ type: "CREATE_ATO_ORDER", order });
+  const createATOOrder = useCallback((order: any, assignedAircraft?: string[]) => {
+    dispatch({ type: "CREATE_ATO_ORDER", order, assignedAircraft } as any);
   }, []);
 
   const editATOOrder = useCallback((orderId: string, updates: any) => {

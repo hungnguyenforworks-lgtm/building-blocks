@@ -69,7 +69,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case "MOVE_AIRCRAFT":
       return state; // TODO: implement zone-based movement
 
-    case "CREATE_ATO_ORDER":
+    case "CREATE_ATO_ORDER": {
+      const preAssigned = (action as any).assignedAircraft as string[] | undefined;
       return {
         ...state,
         atoOrders: [
@@ -77,11 +78,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           {
             ...action.order,
             id: `ato-custom-${crypto.randomUUID().slice(0, 8)}`,
-            status: "pending",
-            assignedAircraft: [],
+            status: preAssigned?.length ? "assigned" : "pending",
+            assignedAircraft: preAssigned ?? [],
           },
         ],
       };
+    }
 
     case "EDIT_ATO_ORDER":
       return {
