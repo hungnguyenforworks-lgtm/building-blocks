@@ -464,7 +464,7 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome, overdueAircraft
 
           {/* ── På Uppdrag Box ── */}
           {(() => {
-            const boxX = 600, boxY = 333, boxW = 255, boxH = 135;
+            const boxX = 585, boxY = 333, boxW = 255, boxH = 135;
             const cols = 4;
             return (
               <g>
@@ -588,11 +588,11 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome, overdueAircraft
 
           {/* ── Legend (SAAB styled) ── */}
           <g>
-            <rect x="678" y="38" width="184" height="105" rx="4"
+            <rect x="656" y="38" width="184" height="105" rx="4"
               fill="#0C234C" opacity="0.92" />
-            <rect x="678" y="38" width="184" height="5" rx="2"
+            <rect x="656" y="38" width="184" height="5" rx="2"
               fill="#D7AB3A" />
-            <text x="770" y="53" textAnchor="middle" fontSize="8" fill="#D7AB3A"
+            <text x="748" y="53" textAnchor="middle" fontSize="8" fill="#D7AB3A"
               fontFamily="monospace" fontWeight="bold" letterSpacing="2">LEGEND</text>
             {[
               { color: "#0C234C", label: "Operativ" },
@@ -602,8 +602,8 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome, overdueAircraft
               { color: "#6B7280", label: "Ej operativ" },
             ].map((item, i) => (
               <g key={i}>
-                <circle cx="697" cy={62 + i * 17} r="4.5" fill={item.color} />
-                <text x="710" y={66 + i * 17} fontSize="8" fill="#D7DEE1"
+                <circle cx="675" cy={62 + i * 17} r="4.5" fill={item.color} />
+                <text x="688" y={66 + i * 17} fontSize="8" fill="#D7DEE1"
                   fontFamily="monospace">{item.label}</text>
               </g>
             ))}
