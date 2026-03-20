@@ -213,7 +213,7 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome, overdueAircraft
   return (
     <div>
       {/* ── SVG MAP ───────────────────────────────────────────────── */}
-      <div className="relative w-full overflow-x-auto select-none" style={{ background: "#D7DEE1" }}>
+      <div className="relative w-full overflow-x-auto select-none" style={{ background: "#ffffff" }}>
 
         <svg
           ref={svgRef}
@@ -225,13 +225,13 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome, overdueAircraft
           onPointerUp={handleSVGPointerUp}
           onPointerLeave={cancelDrag}
         >
-          {/* ── Light silver background */}
-          <rect width="900" height="500" fill="#D7DEE1" />
+          {/* ── White background */}
+          <rect width="900" height="500" fill="#ffffff" />
 
           {/* Subtle tactical grid */}
           <defs>
             <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#0C234C" strokeWidth="0.3" opacity="0.15" />
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#0C234C" strokeWidth="0.3" opacity="0.07" />
             </pattern>
             {["0C234C","D7AB3A","D9192E","6B7280","1a4a8a","5a3a8a","8a6a1a","2a7a5a","1a5a7a","8a5a2a","B06000","CC2222"].map((hex) => (
               <filter key={hex} id={`tint-${hex}`}>
@@ -239,6 +239,8 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome, overdueAircraft
                 <feComposite in="c" in2="SourceAlpha" operator="in" />
               </filter>
             ))}
+            <clipPath id="fuelClip1"><circle cx={468} cy={397} r={12} /></clipPath>
+            <clipPath id="fuelClip2"><circle cx={518} cy={397} r={12} /></clipPath>
           </defs>
           <rect width="900" height="500" fill="url(#grid)" />
 
@@ -252,7 +254,7 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome, overdueAircraft
           <rect x="20" y="36" width="860" height="446" fill="none" stroke="#0C234C" strokeWidth="1" strokeDasharray="8 4" opacity="0.18" rx="2" />
 
           {/* ── Taxiway (thin connector strip, no roads) ── */}
-          <rect x="60" y="238" width="780" height="10" rx="2" fill="#b0b8c8" opacity="0.7" />
+          <rect x="60" y="238" width="780" height="10" rx="2" fill="#0C234C" opacity="0.06" />
           {/* Taxiway centre-line dashes */}
           <line x1="60" y1="243" x2="840" y2="243" stroke="#D7AB3A" strokeWidth="0.8" strokeDasharray="12 10" opacity="0.45" />
 
@@ -293,9 +295,9 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome, overdueAircraft
           {/* ── Apron / Parking ── */}
           <rect
             x="60" y="218" width="780" height="90"
-            fill={selected === "apron" ? "#c8d4e8" : "#b8c8de"}
-            stroke={selected === "apron" ? "#0C234C" : "#8099bb"}
-            strokeWidth={selected === "apron" ? 2 : 0.8}
+            fill={selected === "apron" ? "rgba(12,35,76,0.08)" : "none"}
+            stroke={selected === "apron" ? "#0C234C" : "none"}
+            strokeWidth={selected === "apron" ? 2 : 0}
             rx="4"
             style={{ cursor: "pointer" }}
             onClick={(e) => { e.stopPropagation(); toggle("apron"); }}
@@ -397,17 +399,17 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome, overdueAircraft
                 onClick={(e) => { if (!draggingAcId) { e.stopPropagation(); toggle("hangar"); } }}>
                 {/* Hangar body */}
                 <rect x={hx} y={hy} width="78" height="52" rx="3"
-                  fill={isHangarHot ? "#D7AB3A22" : occupied ? "#D7AB3A15" : "#0C234C0a"}
-                  stroke={isHangarHot ? "#D7AB3A" : isSel ? "#0C234C" : occupied ? "#D7AB3A" : "#0C234C55"}
-                  strokeWidth={isHangarHot || isSel ? 2 : 1} />
+                  fill={isHangarHot ? "rgba(215,171,58,0.15)" : occupied ? "rgba(12,35,76,0.10)" : "rgba(12,35,76,0.05)"}
+                  stroke={isHangarHot ? "#D7AB3A" : isSel ? "#0C234C" : occupied ? "#D7AB3A" : "#0C234C"}
+                  strokeWidth={isHangarHot || isSel ? 2 : 1} strokeOpacity={isHangarHot || isSel || occupied ? 1 : 0.35} />
                 {/* Roof ridge */}
-                <line x1={hx + 39} y1={hy} x2={hx + 39} y2={hy + 24} stroke="#0C234C" strokeWidth="0.5" opacity="0.3" />
+                <line x1={hx + 39} y1={hy} x2={hx + 39} y2={hy + 24} stroke="#0C234C" strokeWidth="0.5" opacity="0.2" />
                 {/* Door */}
                 <rect x={hx + 16} y={hy + 26} width="46" height="24" rx="1"
-                  fill={occupied ? "#D7AB3A20" : "#0C234C08"}
-                  stroke={occupied ? "#D7AB3A80" : "#0C234C30"} strokeWidth="0.8" />
+                  fill={occupied ? "rgba(215,171,58,0.12)" : "rgba(12,35,76,0.06)"}
+                  stroke={occupied ? "#D7AB3A" : "#0C234C"} strokeOpacity={occupied ? 0.6 : 0.2} strokeWidth="0.8" />
                 <text x={hx + 39} y={hy + 12} textAnchor="middle" fontSize="7"
-                  fill={occupied ? "#0C234C" : "#0C234C80"} fontFamily="monospace" fontWeight="bold">
+                  fill={occupied ? "#D7AB3A" : "#0C234C"} fontFamily="monospace" fontWeight="bold">
                   H{i + 1}
                 </text>
                 {occupied && (
@@ -418,7 +420,7 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome, overdueAircraft
               </g>
             );
           })}
-          <text x="228" y="314" textAnchor="middle" fontSize="7" fill="#0C234C" opacity="0.7" fontFamily="monospace" fontWeight="bold">UNDERHÅLLSHALLAR</text>
+          <text x="228" y="313" textAnchor="middle" fontSize="7" fill="#0C234C" opacity="0.5" fontFamily="monospace" fontWeight="bold">UNDERHÅLLSHALLAR</text>
 
           {/* ── Maintenance aircraft inside hangars ── */}
           {maint.slice(0, 8).map((ac, i) => {
@@ -436,76 +438,80 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome, overdueAircraft
             );
           })}
 
-          {/* ── Fuel Depot ── */}
-          {(() => {
-            const isSel = selected === "fuel";
-            const fuelPct = base.fuel / 100;
-            const fuelColor = base.fuel > 60 ? "#0C234C" : base.fuel > 30 ? "#D7AB3A" : "#D9192E";
-            const fuelX = 432;
-            const fuelY = 372;
-            return (
-              <g style={{ cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); toggle("fuel"); }}>
-                <rect x={fuelX} y={fuelY} width="110" height="72" rx="3"
-                  fill={isSel ? "#D7AB3A10" : "#0C234C08"}
-                  stroke={isSel ? "#D7AB3A" : fuelColor + "60"}
-                  strokeWidth={isSel ? 2 : 1} />
-                {/* Tanks */}
-                {(() => {
-                  const tank1Cx = fuelX + 36;
-                  const tank2Cx = fuelX + 74;
-                  const tankCy = fuelY + 27;
-                  const fillW = 34;
-                  const fillX = (cx: number) => cx - fillW / 2;
-                  return (
-                    <>
-                      <circle cx={tank1Cx} cy={tankCy} r="18" fill="#D7DEE1" stroke={fuelColor} strokeWidth="1" opacity="0.85" />
-                      <circle cx={tank2Cx} cy={tankCy} r="18" fill="#D7DEE1" stroke={fuelColor} strokeWidth="1" opacity="0.85" />
-                      <clipPath id="fuelClip1"><circle cx={tank1Cx} cy={tankCy} r="17" /></clipPath>
-                      <rect x={fillX(tank1Cx)} y={tankCy + 17 - 34 * fuelPct} width={fillW} height={34 * fuelPct} fill={fuelColor} opacity="0.6" clipPath="url(#fuelClip1)" />
-                      <clipPath id="fuelClip2"><circle cx={tank2Cx} cy={tankCy} r="17" /></clipPath>
-                      <rect x={fillX(tank2Cx)} y={tankCy + 17 - 34 * fuelPct} width={fillW} height={34 * fuelPct} fill={fuelColor} opacity="0.6" clipPath="url(#fuelClip2)" />
-                    </>
-                  );
-                })()}
-                <text x={fuelX + 36} y={fuelY + 29} textAnchor="middle" fontSize="6.5" fill={fuelColor} fontFamily="monospace" fontWeight="bold">{Math.round(base.fuel)}%</text>
-                <text x={fuelX + 74} y={fuelY + 29} textAnchor="middle" fontSize="6.5" fill={fuelColor} fontFamily="monospace" fontWeight="bold">{Math.round(base.fuel)}%</text>
-                <text x={fuelX + 55} y={fuelY + 56} textAnchor="middle" fontSize="7" fill="#0C234C" fontFamily="monospace" fontWeight="bold">BRÄNSLE DEPÅ</text>
-              </g>
-            );
-          })()}
-
-          {/* ── Ammo Depot ── */}
+          {/* ── Ammo Depot — row 1, aligned with H1-H4 (y=318, h=52) ── */}
           {(() => {
             const isSel = selected === "ammo";
             const totalAmmo = base.ammunition.reduce((s, a) => s + a.quantity, 0);
             const maxAmmo   = base.ammunition.reduce((s, a) => s + a.max, 0);
-            const critical  = totalAmmo / maxAmmo < 0.3;
+            const ammoPct   = maxAmmo > 0 ? totalAmmo / maxAmmo : 1;
+            const critical  = ammoPct < 0.3;
+            const ammoColor = critical ? "#D9192E" : ammoPct < 0.6 ? "#d97706" : "#0C234C";
+            const aX = 430, aY = 318, aW = 140, aH = 52;
+            // 3 trapezoids evenly spaced inside box
+            const trapW = 32, trapSpacing = 40, trapStartX = aX + 10;
             return (
               <g style={{ cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); toggle("ammo"); }}>
-                {[0, 1, 2].map((j) => (
-                  <polygon key={j}
-                    points={`${430 + j * 40},320 ${464 + j * 40},320 ${456 + j * 40},350 ${438 + j * 40},350`}
-                    fill={isSel ? "#D9192E10" : "#0C234C08"}
-                    stroke={critical || isSel ? "#D9192E" : "#0C234C55"}
-                    strokeWidth={isSel ? 2 : 1} />
-                ))}
-                {[0, 1, 2].map((j) => (
-                  <rect key={j} x={441 + j * 40} y={335} width="12" height="15" rx="1"
-                    fill="#D7DEE1" stroke="#0C234C55" strokeWidth="0.5" />
-                ))}
+                <rect x={aX} y={aY} width={aW} height={aH} rx="3"
+                  fill={isSel ? `${ammoColor}12` : "rgba(12,35,76,0.03)"}
+                  stroke={isSel ? ammoColor : "#0C234C"}
+                  strokeOpacity={isSel ? 1 : 0.25}
+                  strokeWidth={isSel ? 2 : 1} />
+                {[0, 1, 2].map((j) => {
+                  const tx = trapStartX + j * trapSpacing;
+                  return (
+                    <g key={j}>
+                      <polygon
+                        points={`${tx},${aY + 5} ${tx + trapW},${aY + 5} ${tx + trapW - 5},${aY + 36} ${tx + 5},${aY + 36}`}
+                        fill={`${ammoColor}20`}
+                        stroke={ammoColor}
+                        strokeOpacity="0.6"
+                        strokeWidth="1.2" />
+                      <rect x={tx + 9} y={aY + 32} width="14" height="8" rx="1"
+                        fill={`${ammoColor}18`} stroke={ammoColor} strokeOpacity="0.3" strokeWidth="0.6" />
+                    </g>
+                  );
+                })}
                 {critical && (
-                  <circle cx="550" cy="325" r="5" fill="#D9192E">
+                  <circle cx={aX + aW - 8} cy={aY + 8} r="4" fill="#D9192E">
                     <animate attributeName="opacity" values="1;0.2;1" dur="1.5s" repeatCount="indefinite" />
                   </circle>
                 )}
-                <text x="487" y="362" textAnchor="middle" fontSize="7" fill="#0C234C" fontFamily="monospace" fontWeight="bold">AMMUNITION DEPÅ</text>
+                <text x={aX + aW / 2} y={aY + aH - 5} textAnchor="middle" fontSize="6.5" fill="#0C234C" opacity="0.55" fontFamily="monospace" fontWeight="bold">AMMUNITION DEPÅ</text>
               </g>
             );
           })()}
 
-          {/* ── På Uppdrag Box ── */}
+          {/* ── Fuel Depot — row 2, aligned with H5-H8 (y=378, h=52) ── */}
           {(() => {
-            const boxX = 585, boxY = 333, boxW = 255, boxH = 135;
+            const isSel = selected === "fuel";
+            const fuelPct = base.fuel / 100;
+            const fuelColor = base.fuel > 60 ? "#0C234C" : base.fuel > 30 ? "#d97706" : "#D9192E";
+            // Tank positions must match clipPath defs above: cx=468/518, cy=397, r=12
+            const fX = 430, fY = 378, fW = 140, fH = 52;
+            const r = 12, tankCy = 397, tank1Cx = 468, tank2Cx = 518;
+            return (
+              <g style={{ cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); toggle("fuel"); }}>
+                <rect x={fX} y={fY} width={fW} height={fH} rx="3"
+                  fill={isSel ? `${fuelColor}12` : "rgba(12,35,76,0.03)"}
+                  stroke={isSel ? fuelColor : "#0C234C"}
+                  strokeOpacity={isSel ? 1 : 0.25}
+                  strokeWidth={isSel ? 2 : 1} />
+                {([{ cx: tank1Cx, clip: "fuelClip1" }, { cx: tank2Cx, clip: "fuelClip2" }]).map(({ cx, clip }) => (
+                  <g key={cx}>
+                    <circle cx={cx} cy={tankCy} r={r} fill="rgba(12,35,76,0.05)" stroke={fuelColor} strokeOpacity="0.5" strokeWidth="1.5" />
+                    <rect x={cx - r} y={tankCy + r - r * 2 * fuelPct} width={r * 2} height={r * 2 * fuelPct}
+                      fill={fuelColor} opacity="0.4" clipPath={`url(#${clip})`} />
+                    <text x={cx} y={tankCy + 4} textAnchor="middle" fontSize="6.5" fill={fuelColor} fontFamily="monospace" fontWeight="bold">{Math.round(base.fuel)}%</text>
+                  </g>
+                ))}
+                <text x={fX + fW / 2} y={fY + fH - 5} textAnchor="middle" fontSize="6.5" fill="#0C234C" opacity="0.55" fontFamily="monospace" fontWeight="bold">BRÄNSLE DEPÅ</text>
+              </g>
+            );
+          })()}
+
+          {/* ── På Uppdrag Box — spans both rows (y=318, h=112) ── */}
+          {(() => {
+            const boxX = 585, boxY = 318, boxW = 255, boxH = 112;
             const cols = 4;
             return (
               <g>
@@ -518,14 +524,14 @@ export function BaseMap({ base, onDropAircraft, onUtfallOutcome, overdueAircraft
                   PÅ UPPDRAG ({onMission.length})
                 </text>
                 {onMission.length === 0 && (
-                  <text x={boxX + boxW / 2} y={boxY + 90} textAnchor="middle" fontSize="8"
+                  <text x={boxX + boxW / 2} y={boxY + 65} textAnchor="middle" fontSize="8"
                     fill="#5566aa" fontFamily="monospace">— inga aktiva uppdrag —</text>
                 )}
-                {onMission.slice(0, 16).map((ac, i) => {
+                {onMission.slice(0, 8).map((ac, i) => {
                   const col = i % cols;
                   const row = Math.floor(i / cols);
                   const cx = boxX + 32 + col * 60;
-                  const cy = boxY + 42 + row * 50;
+                  const cy = boxY + 38 + row * 48;
                   const isRet = ac.status === "returning";
                   const color = isRet ? "#5a3a8a" : "#1a4a8a";
                   return (

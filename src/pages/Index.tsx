@@ -262,8 +262,14 @@ const Index = () => {
       <div className="flex flex-1 overflow-hidden">
 
         {/* ── LEFT SIDEBAR NAV ── */}
+        {(() => {
+          const darkSidebar = ["aar", "flygplan"].includes(activeSection);
+          return (
         <nav className="w-52 flex-shrink-0 flex flex-col border-r"
-          style={{ background: "hsl(0 0% 100%)", borderColor: "hsl(215 14% 86%)" }}>
+          style={{
+            background: darkSidebar ? "#0C234C" : "hsl(0 0% 100%)",
+            borderColor: darkSidebar ? "rgba(215,222,225,0.1)" : "hsl(215 14% 86%)",
+          }}>
 
           {/* Nav items */}
           <div className="py-1.5">
@@ -275,8 +281,12 @@ const Index = () => {
                   className="relative w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all border-l-2"
                   style={{
                     borderLeftColor: isActive ? "#D9192E" : "transparent",
-                    background: isActive ? "hsl(220 63% 18% / 0.06)" : "transparent",
-                    color: isActive ? "hsl(220 63% 18%)" : "hsl(218 15% 50%)",
+                    background: isActive
+                      ? darkSidebar ? "rgba(217,25,46,0.12)" : "hsl(220 63% 18% / 0.06)"
+                      : "transparent",
+                    color: isActive
+                      ? darkSidebar ? "#D7DEE1" : "hsl(220 63% 18%)"
+                      : darkSidebar ? "rgba(215,222,225,0.5)" : "hsl(218 15% 50%)",
                   }}
                 >
                   <Icon className="h-4 w-4 flex-shrink-0" />
@@ -293,12 +303,14 @@ const Index = () => {
           </div>
 
           {/* ── Fleet list ── */}
-          <div className="flex-1 overflow-y-auto border-t" style={{ borderColor: "hsl(215 14% 88%)" }}>
+          <div className="flex-1 overflow-y-auto border-t"
+            style={{ borderColor: darkSidebar ? "rgba(215,222,225,0.1)" : "hsl(215 14% 88%)" }}>
             <div className="px-3 pt-2.5 pb-1">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[8px] font-mono uppercase tracking-widest"
-                  style={{ color: "hsl(218 15% 55%)" }}>Flygplan</span>
-                <span className="text-[8px] font-mono" style={{ color: "hsl(218 15% 55%)" }}>
+                  style={{ color: darkSidebar ? "rgba(215,222,225,0.45)" : "hsl(218 15% 55%)" }}>Flygplan</span>
+                <span className="text-[8px] font-mono"
+                  style={{ color: darkSidebar ? "rgba(215,222,225,0.45)" : "hsl(218 15% 55%)" }}>
                   → DASHBOARD
                 </span>
               </div>
@@ -311,10 +323,11 @@ const Index = () => {
                       key={ac.id}
                       whileHover={{ x: 2, transition: { duration: 0.1 } }}
                       onClick={() => { setSelectedAircraftTail(ac.tailNumber); setActiveSection("flygplan"); }}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors hover:bg-black/5"
+                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors ${darkSidebar ? "hover:bg-white/5" : "hover:bg-black/5"}`}
                       style={{ border: `1px solid ${col}28` }}
                     >
-                      <span className="text-[10px] font-mono font-black" style={{ color: "hsl(220 63% 18%)" }}>
+                      <span className="text-[10px] font-mono font-black"
+                        style={{ color: darkSidebar ? "#D7DEE1" : "hsl(220 63% 18%)" }}>
                         {ac.tailNumber}
                       </span>
                       <span className="text-[8px] font-mono font-bold px-1 py-0.5 rounded"
@@ -326,7 +339,8 @@ const Index = () => {
                           {ac.health}%
                         </span>
                       )}
-                      <ChevronRight className="h-2.5 w-2.5 ml-auto flex-shrink-0 opacity-20" />
+                      <ChevronRight className="h-2.5 w-2.5 ml-auto flex-shrink-0"
+                        style={{ color: darkSidebar ? "rgba(215,222,225,0.25)" : "rgba(0,0,0,0.2)" }} />
                     </motion.button>
                   );
                 })}
@@ -334,6 +348,8 @@ const Index = () => {
             </div>
           </div>
         </nav>
+          );
+        })()}
 
         {/* ── MAIN CONTENT ── */}
         {activeSection === "ato" ? (
@@ -365,34 +381,34 @@ const Index = () => {
                 <>
                   {/* ── Command readiness panel ── */}
                   <div className="rounded-xl overflow-hidden"
-                    style={{ background: "#0C234C", border: "1px solid rgba(215,222,225,0.08)", boxShadow: "0 4px 24px rgba(12,35,76,0.18)" }}>
+                    style={{ background: "#ffffff", border: "1px solid #e2e8f0", boxShadow: "0 2px 12px rgba(12,35,76,0.08)" }}>
 
                     {/* Top bar */}
                     <div className="flex items-center justify-between px-5 py-2.5 border-b"
-                      style={{ borderColor: "rgba(215,222,225,0.08)", background: "rgba(217,25,46,0.04)" }}>
+                      style={{ borderColor: "#e2e8f0", background: "#f8fafc" }}>
                       <div className="flex items-center gap-2">
-                        <Activity className="h-3.5 w-3.5" style={{ color: "#D9192E" }} />
-                        <span className="text-[10px] font-mono font-bold tracking-widest uppercase" style={{ color: "#D7DEE1" }}>
+                        <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#D9192E" }} />
+                        <span className="text-[10px] font-mono font-bold tracking-widest uppercase" style={{ color: "#0C234C" }}>
                           OPERATIONSLÄGE — {selectedBase.name}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-mono" style={{ color: "rgba(215,222,225,0.4)" }}>
+                        <span className="text-[9px] font-mono" style={{ color: "#94a3b8" }}>
                           T{state.turnNumber} · {String(state.hour).padStart(2,"0")}:00Z
                         </span>
                         <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded"
-                          style={{ background: "rgba(217,25,46,0.15)", color: "#D9192E", border: "1px solid rgba(217,25,46,0.3)" }}>
+                          style={{ background: "rgba(217,25,46,0.08)", color: "#D9192E", border: "1px solid rgba(217,25,46,0.25)" }}>
                           {state.phase}
                         </span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 divide-x" style={{ borderColor: "rgba(215,222,225,0.07)", divideColor: "rgba(215,222,225,0.07)" }}>
+                    <div className="grid grid-cols-3 divide-x" style={{ borderColor: "#e2e8f0" }}>
 
                       {/* Col 1 — Readiness donut */}
                       <div className="flex items-center gap-5 px-6 py-5">
                         <svg width={92} height={92} viewBox="0 0 92 92" style={{ flexShrink: 0 }}>
-                          <circle cx={46} cy={46} r={r} fill="none" stroke="rgba(215,222,225,0.07)" strokeWidth={10} />
+                          <circle cx={46} cy={46} r={r} fill="none" stroke="#e2e8f0" strokeWidth={10} />
                           <motion.circle cx={46} cy={46} r={r} fill="none"
                             stroke={readinessColor} strokeWidth={10} strokeLinecap="round"
                             transform="rotate(-90 46 46)"
@@ -401,19 +417,19 @@ const Index = () => {
                             transition={{ duration: 1.2, ease: "easeOut" }}
                           />
                           <text x={46} y={42} textAnchor="middle" fontSize="18" fontFamily="monospace" fontWeight="700" fill={readinessColor}>{mcPct}%</text>
-                          <text x={46} y={56} textAnchor="middle" fontSize="8" fontFamily="monospace" fill="rgba(215,222,225,0.45)">BEREDSKAP</text>
+                          <text x={46} y={56} textAnchor="middle" fontSize="8" fontFamily="monospace" fill="#94a3b8">BEREDSKAP</text>
                         </svg>
                         <div className="space-y-1">
-                          <div className="text-[9px] font-mono uppercase tracking-wider mb-2" style={{ color: "rgba(215,222,225,0.35)" }}>Flottajstatus</div>
+                          <div className="text-[9px] font-mono uppercase tracking-wider mb-2" style={{ color: "#94a3b8" }}>Flottajstatus</div>
                           {[
                             { label: "Mission Capable",   val: mcTotal,       color: "#22a05a" },
                             { label: "På uppdrag",         val: onMissionTotal, color: "#3b82f6" },
-                            { label: "Underhåll / NMC",    val: inMaintTotal,   color: inMaintTotal > 0 ? "#d97706" : "rgba(215,222,225,0.3)" },
-                            { label: `Totalt`,             val: `${mcTotal}/${totalAc}`, color: "rgba(215,222,225,0.55)" },
+                            { label: "Underhåll / NMC",    val: inMaintTotal,   color: inMaintTotal > 0 ? "#d97706" : "#cbd5e1" },
+                            { label: "Totalt",             val: `${mcTotal}/${totalAc}`, color: "#64748b" },
                           ].map(k => (
                             <div key={k.label} className="flex items-center gap-2">
                               <div className="w-1.5 h-1.5 rounded-full" style={{ background: k.color, flexShrink: 0 }} />
-                              <span className="text-[9px] font-mono" style={{ color: "rgba(215,222,225,0.5)", width: 110 }}>{k.label}</span>
+                              <span className="text-[9px] font-mono" style={{ color: "#64748b", width: 110 }}>{k.label}</span>
                               <span className="text-[10px] font-mono font-bold" style={{ color: k.color }}>{k.val}</span>
                             </div>
                           ))}
@@ -422,17 +438,17 @@ const Index = () => {
 
                       {/* Col 2 — Aircraft grid */}
                       <div className="px-5 py-5">
-                        <div className="text-[9px] font-mono uppercase tracking-wider mb-3" style={{ color: "rgba(215,222,225,0.35)" }}>
+                        <div className="text-[9px] font-mono uppercase tracking-wider mb-3" style={{ color: "#94a3b8" }}>
                           <Plane className="inline h-3 w-3 mr-1.5" />Flygplan — snabbstatus
                         </div>
                         <div className="flex flex-wrap gap-1.5">
                           {selectedBase.aircraft.map(ac => (
                             <button key={ac.id}
                               onClick={() => { setSelectedAircraftTail(ac.tailNumber); setActiveSection("flygplan"); }}
-                              className="flex items-center gap-1 px-2 py-1 rounded text-[8px] font-mono font-bold transition-all hover:brightness-125"
+                              className="flex items-center gap-1 px-2 py-1 rounded text-[8px] font-mono font-bold transition-all hover:opacity-80"
                               style={{
-                                background: `${statusDot(ac.status)}18`,
-                                border: `1px solid ${statusDot(ac.status)}40`,
+                                background: `${statusDot(ac.status)}14`,
+                                border: `1px solid ${statusDot(ac.status)}35`,
                                 color: statusDot(ac.status),
                               }}
                               title={`${ac.tailNumber} — ${ac.status}`}
@@ -446,14 +462,14 @@ const Index = () => {
 
                       {/* Col 3 — Alerts */}
                       <div className="px-5 py-5">
-                        <div className="text-[9px] font-mono uppercase tracking-wider mb-3" style={{ color: "rgba(215,222,225,0.35)" }}>
+                        <div className="text-[9px] font-mono uppercase tracking-wider mb-3" style={{ color: "#94a3b8" }}>
                           <AlertOctagon className="inline h-3 w-3 mr-1.5" />Larm & åtgärder
                         </div>
                         <div className="space-y-1.5">
                           {kritiskaResurser > 0 && (
                             <button onClick={() => setActiveSection("resources")}
-                              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left transition-all hover:brightness-110"
-                              style={{ background: "rgba(217,25,46,0.12)", border: "1px solid rgba(217,25,46,0.3)" }}>
+                              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left transition-all hover:opacity-90"
+                              style={{ background: "rgba(217,25,46,0.06)", border: "1px solid rgba(217,25,46,0.2)" }}>
                               <AlertOctagon className="h-3 w-3 animate-pulse" style={{ color: "#D9192E", flexShrink: 0 }} />
                               <span className="text-[9px] font-mono font-bold" style={{ color: "#D9192E" }}>
                                 {kritiskaResurser} KRITISKA RESURSER →
@@ -462,8 +478,8 @@ const Index = () => {
                           )}
                           {inMaintTotal > 0 && (
                             <button onClick={() => setActiveSection("maintenance")}
-                              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left transition-all hover:brightness-110"
-                              style={{ background: "rgba(217,151,42,0.10)", border: "1px solid rgba(217,151,42,0.25)" }}>
+                              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left transition-all hover:opacity-90"
+                              style={{ background: "rgba(217,151,42,0.07)", border: "1px solid rgba(217,151,42,0.2)" }}>
                               <Wrench className="h-3 w-3" style={{ color: "#d97706", flexShrink: 0 }} />
                               <span className="text-[9px] font-mono font-bold" style={{ color: "#d97706" }}>
                                 {inMaintTotal} plan i UH/NMC →
@@ -472,7 +488,7 @@ const Index = () => {
                           )}
                           {kritiskaResurser === 0 && inMaintTotal === 0 && (
                             <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg"
-                              style={{ background: "rgba(34,160,90,0.10)", border: "1px solid rgba(34,160,90,0.22)" }}>
+                              style={{ background: "rgba(34,160,90,0.07)", border: "1px solid rgba(34,160,90,0.18)" }}>
                               <ShieldCheck className="h-3 w-3" style={{ color: "#22a05a" }} />
                               <span className="text-[9px] font-mono font-bold" style={{ color: "#22a05a" }}>NOMINELLT — ALLA SYSTEM OK</span>
                             </div>

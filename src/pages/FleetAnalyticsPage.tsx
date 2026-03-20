@@ -11,7 +11,6 @@ import {
 
 // ─── SAAB Brand colors ────────────────────────────────────────────────────────
 const DEEP_BLUE = "#0C234C";
-const SILVER    = "#D7DEE1";
 const RED       = "#D9192E";
 const AMBER     = "#D7AB3A";
 
@@ -24,14 +23,14 @@ function borderColorForRisk(risk?: RiskLevel): string {
 }
 
 const ACTION_BADGES: Record<AARActionType, { label: string; color: string; bg: string }> = {
-  MISSION_DISPATCH:  { label: "UPPDRAG",    color: "#60a5fa", bg: "rgba(59,130,246,0.18)"  },
-  MAINTENANCE_START: { label: "UNDERHÅLL",  color: "#a78bfa", bg: "rgba(139,92,246,0.18)"  },
-  MAINTENANCE_PAUSE: { label: "PAUSE",      color: AMBER,     bg: "rgba(215,171,58,0.18)"  },
-  UTFALL_APPLIED:    { label: "UTFALL",     color: "#fb923c", bg: "rgba(249,115,22,0.18)"  },
-  FAULT_NMC:         { label: "NMC",        color: RED,       bg: "rgba(217,25,46,0.18)"   },
-  LANDING_RECEIVED:  { label: "LANDNING",   color: "#22c55e", bg: "rgba(34,197,94,0.18)"   },
-  SPARE_PART_USED:   { label: "RESERVDEL",  color: "#22d3ee", bg: "rgba(34,211,238,0.18)"  },
-  HANGAR_CONFIRM:    { label: "HANGAR",     color: "#a78bfa", bg: "rgba(139,92,246,0.18)"  },
+  MISSION_DISPATCH:  { label: "UPPDRAG",    color: "#1d4ed8", bg: "#dbeafe" },
+  MAINTENANCE_START: { label: "UNDERHÅLL",  color: "#6d28d9", bg: "#ede9fe" },
+  MAINTENANCE_PAUSE: { label: "PAUSE",      color: "#92400e", bg: "#fef3c7" },
+  UTFALL_APPLIED:    { label: "UTFALL",     color: "#c2410c", bg: "#ffedd5" },
+  FAULT_NMC:         { label: "NMC",        color: RED,       bg: "#fee2e2" },
+  LANDING_RECEIVED:  { label: "LANDNING",   color: "#15803d", bg: "#dcfce7" },
+  SPARE_PART_USED:   { label: "RESERVDEL",  color: "#0e7490", bg: "#cffafe" },
+  HANGAR_CONFIRM:    { label: "HANGAR",     color: "#6d28d9", bg: "#ede9fe" },
 };
 
 // ─── ReadinessScoreBar ────────────────────────────────────────────────────────
@@ -51,28 +50,29 @@ function ReadinessScoreBar({
   readiness, mcCount, uhCount, nmcCount, totalCount, avgHealth, serviceDue, phase,
 }: ReadinessProps) {
   const scoreColor =
-    readiness >= 70 ? "#22c55e"
-    : readiness >= 40 ? AMBER
+    readiness >= 70 ? "#16a34a"
+    : readiness >= 40 ? "#d97706"
     : RED;
 
   const healthColor =
-    avgHealth >= 70 ? "#22c55e"
-    : avgHealth >= 40 ? AMBER
+    avgHealth >= 70 ? "#16a34a"
+    : avgHealth >= 40 ? "#d97706"
     : RED;
 
   return (
     <div
       className="rounded-xl p-5"
       style={{
-        background: "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        background: "#ffffff",
+        border: "1px solid #e2e8f0",
+        boxShadow: "0 2px 8px rgba(12,35,76,0.06)",
       }}
     >
       <div className="flex items-start justify-between mb-4">
         <div>
           <div
-            className="text-[9px] font-mono uppercase tracking-widest mb-1"
-            style={{ color: "rgba(215,222,225,0.45)" }}
+            className="text-[9px] font-mono uppercase tracking-widest mb-1 font-bold"
+            style={{ color: "#94a3b8" }}
           >
             FLEET READINESS
           </div>
@@ -80,7 +80,7 @@ function ReadinessScoreBar({
             <span className="text-5xl font-black font-mono" style={{ color: scoreColor }}>
               {readiness}%
             </span>
-            <span className="text-sm font-mono" style={{ color: "rgba(215,222,225,0.5)" }}>
+            <span className="text-sm font-mono" style={{ color: "#64748b" }}>
               sammanvägd flottberedskap
             </span>
           </div>
@@ -88,8 +88,8 @@ function ReadinessScoreBar({
         <span
           className="text-[9px] font-mono font-bold px-3 py-1 rounded-full"
           style={{
-            background: "rgba(217,25,46,0.15)",
-            border: "1px solid rgba(217,25,46,0.3)",
+            background: "#fee2e2",
+            border: "1px solid #fca5a5",
             color: RED,
           }}
         >
@@ -98,7 +98,7 @@ function ReadinessScoreBar({
       </div>
 
       {/* Progress bar */}
-      <div className="h-2 rounded-full bg-white/10 overflow-hidden mb-4">
+      <div className="h-2 rounded-full overflow-hidden mb-4" style={{ background: "#e2e8f0" }}>
         <motion.div
           className="h-full rounded-full"
           initial={{ width: 0 }}
@@ -110,50 +110,45 @@ function ReadinessScoreBar({
 
       {/* Stat pills */}
       <div className="flex flex-wrap gap-2">
-        {/* MC */}
         <div
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-mono font-bold"
-          style={{ background: "rgba(37,99,235,0.18)", border: "1px solid rgba(37,99,235,0.35)", color: "#60a5fa" }}
+          style={{ background: "#dbeafe", border: "1px solid #bfdbfe", color: "#1d4ed8" }}
         >
           <Plane className="h-3 w-3" />
           MC: {mcCount}/{totalCount}
         </div>
-        {/* UH */}
         <div
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-mono font-bold"
-          style={{ background: "rgba(215,171,58,0.15)", border: "1px solid rgba(215,171,58,0.3)", color: AMBER }}
+          style={{ background: "#fef3c7", border: "1px solid #fde68a", color: "#92400e" }}
         >
           <Wrench className="h-3 w-3" />
           UH: {uhCount}
         </div>
-        {/* NMC */}
         <div
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-mono font-bold"
-          style={{ background: "rgba(217,25,46,0.15)", border: "1px solid rgba(217,25,46,0.3)", color: RED }}
+          style={{ background: "#fee2e2", border: "1px solid #fca5a5", color: "#b91c1c" }}
         >
           <AlertTriangle className="h-3 w-3" />
           NMC: {nmcCount}
         </div>
-        {/* Avg Health */}
         <div
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-mono font-bold"
           style={{
-            background: `${healthColor}18`,
-            border: `1px solid ${healthColor}40`,
+            background: avgHealth >= 70 ? "#dcfce7" : avgHealth >= 40 ? "#fef3c7" : "#fee2e2",
+            border: `1px solid ${avgHealth >= 70 ? "#86efac" : avgHealth >= 40 ? "#fde68a" : "#fca5a5"}`,
             color: healthColor,
           }}
         >
           <Shield className="h-3 w-3" />
           Snittshälsa: {avgHealth}%
         </div>
-        {/* Service Due */}
         {serviceDue > 0 && (
           <div
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-mono font-bold"
             style={{
-              background: serviceDue >= 3 ? "rgba(217,25,46,0.15)" : "rgba(215,171,58,0.15)",
-              border: `1px solid ${serviceDue >= 3 ? "rgba(217,25,46,0.3)" : "rgba(215,171,58,0.3)"}`,
-              color: serviceDue >= 3 ? RED : AMBER,
+              background: serviceDue >= 3 ? "#fee2e2" : "#fef3c7",
+              border: `1px solid ${serviceDue >= 3 ? "#fca5a5" : "#fde68a"}`,
+              color: serviceDue >= 3 ? "#b91c1c" : "#92400e",
             }}
           >
             <Clock className="h-3 w-3" />
@@ -179,18 +174,19 @@ function BeslutloggPanel({ events, navigate }: BeslutloggProps) {
     <div
       className="rounded-xl p-4 flex flex-col"
       style={{
-        background: "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        background: "#ffffff",
+        border: "1px solid #e2e8f0",
+        boxShadow: "0 2px 8px rgba(12,35,76,0.06)",
       }}
     >
       <div className="mb-3">
         <div
           className="text-[9px] font-mono uppercase tracking-widest font-bold"
-          style={{ color: "rgba(215,222,225,0.45)" }}
+          style={{ color: "#94a3b8" }}
         >
           BESLUTSLOGG
         </div>
-        <div className="text-[9px] font-mono mt-0.5" style={{ color: "rgba(215,222,225,0.3)" }}>
+        <div className="text-[9px] font-mono mt-0.5" style={{ color: "#94a3b8" }}>
           Händelser som påverkar flottans hälsa
         </div>
       </div>
@@ -198,7 +194,7 @@ function BeslutloggPanel({ events, navigate }: BeslutloggProps) {
       {filtered.length === 0 ? (
         <div
           className="flex-1 flex items-center justify-center text-[10px] font-mono text-center px-4"
-          style={{ color: "rgba(215,222,225,0.35)" }}
+          style={{ color: "#94a3b8" }}
         >
           Inga händelser loggade ännu — börja flyga plan för att fylla loggen.
         </div>
@@ -216,21 +212,24 @@ function BeslutloggPanel({ events, navigate }: BeslutloggProps) {
                   className="rounded-lg overflow-hidden"
                   style={{
                     borderLeft: `3px solid ${borderColor}`,
-                    background: "rgba(255,255,255,0.04)",
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderLeftColor: borderColor,
+                    borderLeftWidth: "3px",
                   }}
                 >
                   <div className="px-3 py-2 space-y-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span
                         className="text-[8px] font-mono"
-                        style={{ color: "rgba(215,222,225,0.4)" }}
+                        style={{ color: "#94a3b8" }}
                       >
                         {ev.timestamp}
                       </span>
                       {ev.aircraftId && (
                         <span
                           className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded"
-                          style={{ background: DEEP_BLUE, color: AMBER, border: `1px solid rgba(215,171,58,0.3)` }}
+                          style={{ background: DEEP_BLUE, color: AMBER }}
                         >
                           {ev.aircraftId}
                         </span>
@@ -246,7 +245,7 @@ function BeslutloggPanel({ events, navigate }: BeslutloggProps) {
                     </div>
                     <p
                       className="text-[10px] font-mono leading-tight truncate"
-                      style={{ color: SILVER }}
+                      style={{ color: DEEP_BLUE }}
                       title={ev.message}
                     >
                       {ev.message}
@@ -261,11 +260,11 @@ function BeslutloggPanel({ events, navigate }: BeslutloggProps) {
 
       <button
         onClick={() => navigate("/aar")}
-        className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-mono font-bold transition-all hover:brightness-110"
+        className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-mono font-bold transition-all hover:bg-slate-100"
         style={{
-          background: "rgba(215,171,58,0.12)",
-          border: `1px solid rgba(215,171,58,0.3)`,
-          color: AMBER,
+          background: "#f8fafc",
+          border: "1px solid #e2e8f0",
+          color: DEEP_BLUE,
         }}
       >
         Visa full AAR
@@ -309,32 +308,34 @@ export default function FleetAnalyticsPage({ embedded = false }: { embedded?: bo
   ).length;
 
   return (
-    <div className={embedded ? "font-mono min-h-full" : "min-h-screen font-mono"} style={{ background: DEEP_BLUE, color: SILVER }}>
-
+    <div
+      className={embedded ? "font-mono min-h-full" : "min-h-screen font-mono"}
+      style={{ background: "#f8fafc", color: DEEP_BLUE }}
+    >
       {/* Header — only in standalone mode */}
       {!embedded && (
         <div
           className="flex items-center justify-between px-6 py-4 border-b"
-          style={{ borderColor: "rgba(215,222,225,0.1)" }}
+          style={{ background: "#ffffff", borderColor: "#e2e8f0" }}
         >
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate("/")}
               className="flex items-center gap-2 text-xs font-mono hover:opacity-70 transition-opacity"
-              style={{ color: "rgba(215,222,225,0.6)" }}
+              style={{ color: "#64748b" }}
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               DASHBOARD
             </button>
-            <div className="h-4 w-px" style={{ background: "rgba(215,222,225,0.2)" }} />
+            <div className="h-4 w-px" style={{ background: "#e2e8f0" }} />
             <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4" style={{ color: AMBER }} />
-              <span className="text-sm font-mono font-bold tracking-wider" style={{ color: SILVER }}>
+              <Activity className="h-4 w-4" style={{ color: DEEP_BLUE }} />
+              <span className="text-sm font-mono font-bold tracking-wider" style={{ color: DEEP_BLUE }}>
                 FLEET ANALYTICS — FLOTTÖVERSIKT
               </span>
             </div>
           </div>
-          <span className="text-xs font-mono" style={{ color: "rgba(215,222,225,0.5)" }}>
+          <span className="text-xs font-mono" style={{ color: "#64748b" }}>
             Dag {state.day} · {String(state.hour).padStart(2, "0")}:00 · {state.phase}
           </span>
         </div>
@@ -360,11 +361,11 @@ export default function FleetAnalyticsPage({ embedded = false }: { embedded?: bo
           {/* Left — FlygschemaTidslinje with base selector */}
           <div
             className="rounded-xl p-4"
-            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+            style={{ background: "#ffffff", border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(12,35,76,0.06)" }}
           >
             {/* Base tabs */}
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-[9px] font-mono uppercase tracking-widest font-bold mr-2" style={{ color: "rgba(215,222,225,0.45)" }}>
+              <span className="text-[9px] font-mono uppercase tracking-widest font-bold mr-2" style={{ color: "#94a3b8" }}>
                 LIVSLÄNGD &amp; FLYGSCHEMA
               </span>
               {state.bases.map((base) => (
@@ -373,9 +374,9 @@ export default function FleetAnalyticsPage({ embedded = false }: { embedded?: bo
                   onClick={() => setSelectedBaseId(base.id)}
                   className="px-3 py-1 rounded text-[9px] font-mono font-bold transition-all"
                   style={{
-                    background: selectedBaseId === base.id ? AMBER : "rgba(215,222,225,0.08)",
-                    color: selectedBaseId === base.id ? DEEP_BLUE : "rgba(215,222,225,0.55)",
-                    border: selectedBaseId === base.id ? "none" : "1px solid rgba(215,222,225,0.15)",
+                    background: selectedBaseId === base.id ? DEEP_BLUE : "#f1f5f9",
+                    color: selectedBaseId === base.id ? "#ffffff" : "#64748b",
+                    border: selectedBaseId === base.id ? "none" : "1px solid #e2e8f0",
                   }}
                 >
                   {base.id}
@@ -383,8 +384,7 @@ export default function FleetAnalyticsPage({ embedded = false }: { embedded?: bo
               ))}
             </div>
 
-            {/* Chart — light wrapper so FlygschemaTidslinje renders on white bg */}
-            <div className="rounded-lg overflow-hidden bg-white p-3">
+            <div className="rounded-lg overflow-hidden p-3" style={{ background: "#f8fafc" }}>
               {(() => {
                 const base = state.bases.find((b) => b.id === selectedBaseId) ?? state.bases[0];
                 return (
@@ -401,23 +401,23 @@ export default function FleetAnalyticsPage({ embedded = false }: { embedded?: bo
           <BeslutloggPanel events={state.events} navigate={navigate} />
         </div>
 
-        {/* Per-base life & recommendations — follows the base selector above */}
+        {/* Per-base life & recommendations */}
         {(() => {
           const selectedBase = state.bases.find((b) => b.id === selectedBaseId) ?? state.bases[0];
           return (
             <div
               className="rounded-xl p-4"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+              style={{ background: "#ffffff", border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(12,35,76,0.06)" }}
             >
               <div className="flex items-center justify-between mb-4">
-                <div className="text-[9px] font-mono uppercase tracking-widest font-bold" style={{ color: "rgba(215,222,225,0.45)" }}>
+                <div className="text-[9px] font-mono uppercase tracking-widest font-bold" style={{ color: "#94a3b8" }}>
                   REMAINING LIFE &amp; OPTIMERINGSREKOMMENDATIONER — {selectedBase.id}
                 </div>
-                <span className="text-[8px] font-mono px-2 py-0.5 rounded" style={{ background: "rgba(215,171,58,0.15)", color: AMBER }}>
+                <span className="text-[8px] font-mono px-2 py-0.5 rounded" style={{ background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" }}>
                   {selectedBase.aircraft.length} flygplan
                 </span>
               </div>
-              <div className="rounded-lg overflow-hidden bg-white p-4">
+              <div className="rounded-lg overflow-hidden p-4" style={{ background: "#f8fafc" }}>
                 <RemainingLifeGraf bases={[selectedBase]} phase={state.phase} />
               </div>
             </div>
