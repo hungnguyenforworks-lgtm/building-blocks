@@ -549,7 +549,7 @@ const Index = () => {
 
               {/* ──── RESURSER ──── */}
               {activeSection === "resources" && (
-                <ResursPage base={selectedBase} phase={state.phase} />
+            <ResursPage base={selectedBase} phase={state.phase} events={state.events} />
               )}
 
               {/* ──── FLEET ANALYTICS ──── */}
@@ -574,7 +574,7 @@ const Index = () => {
 
         {/* ── RIGHT SIDEBAR — Intelligence Sidebar ── */}
         {!["ato","fleet","aar","flygplan"].includes(activeSection) && (
-          <IntelligenceSidebar base={selectedBase} phase={state.phase} />
+            <IntelligenceSidebar base={selectedBase} phase={state.phase} events={state.events} />
         )}
 
       </div>

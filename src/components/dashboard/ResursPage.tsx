@@ -1,10 +1,10 @@
-import { Base, ScenarioPhase } from "@/types/game";
+import { Base, ScenarioPhase, GameEvent } from "@/types/game";
 import { motion } from "framer-motion";
 import {
   Fuel, Zap, Package, Users, Wrench,
   AlertTriangle, Info, CheckCircle2, Radio,
 } from "lucide-react";
-import { INTEL_FEED } from "./IntelligenceSidebar";
+import { buildIntelFeed, type IntelFeedItem } from "./IntelligenceSidebar";
 
 // ─── SAAB palette (light-mode) ─────────────────────────────────────────────────
 const NAVY   = "#0C234C";
@@ -13,6 +13,7 @@ const RED    = "#D9192E";
 interface Props {
   base: Base;
   phase: ScenarioPhase;
+  events: GameEvent[];
 }
 
 // ─── Animated donut gauge (light bg version) ───────────────────────────────────
@@ -108,7 +109,7 @@ const FEED_CFG = {
   info:     { bg: "hsl(220 63% 38% / 0.06)", border: "hsl(220 63% 38% / 0.2)",  icon: Info,          nameColor: "#1d4ed8"  },
 };
 
-function FeedBubble({ item }: { item: typeof INTEL_FEED[0] }) {
+function FeedBubble({ item }: { item: IntelFeedItem }) {
   const cfg = FEED_CFG[item.type as keyof typeof FEED_CFG];
   const Icon = cfg.icon;
   return (
@@ -135,14 +136,16 @@ function FeedBubble({ item }: { item: typeof INTEL_FEED[0] }) {
 // ─── Resource card ────────────────────────────────────────────────────────────
 function ResCard({
   icon: Icon, title, accent, feedCategory, critical, children,
+  feedItems,
 }: {
   icon: React.ElementType; title: string; accent: string;
   feedCategory: "fuel" | "ammo" | "parts" | "personnel";
   critical?: boolean;
   children: React.ReactNode;
+  feedItems: IntelFeedItem[];
 }) {
-  const feedItems = INTEL_FEED.filter(f => f.category === feedCategory);
-  const criticalFeed = feedItems.filter(f => f.type === "critical" || f.type === "warning").length;
+  const filtered = feedItems.filter(f => f.category === feedCategory);
+  const criticalFeed = filtered.filter(f => f.type === "critical" || f.type === "warning").length;
   return (
     <div style={{
       background: "hsl(0 0% 100%)",
@@ -189,7 +192,7 @@ function ResCard({
         <div style={{ flex: 1 }}>{children}</div>
 
         {/* Filtered feed */}
-        {feedItems.length > 0 && (
+        {filtered.length > 0 && (
           <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid hsl(215 14% 90%)" }}>
             <div style={{
               display: "flex", alignItems: "center", gap: 5, marginBottom: 7,
@@ -204,10 +207,10 @@ function ResCard({
                 fontSize: 7, fontFamily: "monospace", fontWeight: 700,
                 border: "1px solid hsl(220 63% 38% / 0.2)",
               }}>
-                {feedItems.length}
+                {filtered.length}
               </span>
             </div>
-            {feedItems.map(item => <FeedBubble key={item.id} item={item} />)}
+            {filtered.map(item => <FeedBubble key={item.id} item={item} />)}
           </div>
         )}
       </div>
@@ -216,7 +219,7 @@ function ResCard({
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
-export function ResursPage({ base, phase }: Props) {
+export function ResursPage({ base, phase, events }: Props) {
   const fuelRate      = phase === "KRIG" ? 3 : phase === "KRIS" ? 1.5 : 0.5;
   const fuelPct       = Math.round((base.fuel / base.maxFuel) * 100);
   const fuelLiters    = Math.round(base.fuel * 800);
@@ -236,6 +239,7 @@ export function ResursPage({ base, phase }: Props) {
   const secondaryParts = base.spareParts.filter(p => p.quantity / p.maxQuantity >= 0.30);
 
   const freeColor = (pct: number) => pct < 30 ? RED : pct < 60 ? "#D97706" : "#22A05A";
+  const feedItems = buildIntelFeed(base, events);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -285,7 +289,7 @@ export function ResursPage({ base, phase }: Props) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
 
         {/* Fuel card */}
-        <ResCard icon={Fuel} title="Bränsle" accent="#D97706" feedCategory="fuel" critical={fuelPct < 30}>
+        <ResCard icon={Fuel} title="Bränsle" accent="#D97706" feedCategory="fuel" critical={fuelPct < 30} feedItems={feedItems}>
           <ResourceBar label="Nivå" pct={fuelPct}
             color={freeColor(fuelPct)} count={`${fuelLiters.toLocaleString("sv-SE")} L`} />
           <div style={{ display: "flex", gap: 16, marginTop: 4, flexWrap: "wrap" }}>
@@ -295,7 +299,7 @@ export function ResursPage({ base, phase }: Props) {
         </ResCard>
 
         {/* Ammo card */}
-        <ResCard icon={Zap} title="Vapen / Last" accent="#3B82F6" feedCategory="ammo"
+        <ResCard icon={Zap} title="Vapen / Last" accent="#3B82F6" feedCategory="ammo" feedItems={feedItems}
           critical={base.ammunition.some(a => a.quantity / a.max < 0.30)}>
           {base.ammunition.map(a => {
             const p = Math.round((a.quantity / a.max) * 100);
@@ -306,7 +310,7 @@ export function ResursPage({ base, phase }: Props) {
 
         {/* Parts card */}
         <ResCard icon={Package} title="Reservdelar" accent={criticalParts.length > 0 ? RED : "#0C234C"}
-          feedCategory="parts" critical={criticalParts.length > 0}>
+          feedCategory="parts" critical={criticalParts.length > 0} feedItems={feedItems}>
           {criticalParts.length > 0 && (
             <>
               <div style={{
@@ -360,7 +364,7 @@ export function ResursPage({ base, phase }: Props) {
 
         {/* Personnel card */}
         <ResCard icon={Users} title="Personal" accent="#22A05A" feedCategory="personnel"
-          critical={personnelPct < 50}>
+          critical={personnelPct < 50} feedItems={feedItems}>
           {base.personnel.map(p => {
             const pct = Math.round((p.available / p.total) * 100);
             return <ResourceBar key={p.id} label={p.role} pct={pct}

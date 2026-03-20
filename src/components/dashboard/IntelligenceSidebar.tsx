@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Base, ScenarioPhase } from "@/types/game";
+import { Base, ScenarioPhase, GameEvent } from "@/types/game";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Fuel, Zap, Users, Radio, ChevronLeft, ChevronRight,
@@ -14,27 +14,98 @@ const RED    = "#D9192E";
 type ActiveSection = "fuel" | "ammo" | "parts" | "personnel" | "feed" | null;
 type FeedCategory  = "fuel" | "ammo" | "parts" | "personnel" | "general";
 
-// ─── Dummy intel feed (with category for filtering) ────────────────────────────
-export const INTEL_FEED: {
-  id: number; source: string; time: string; type: string; category: FeedCategory; msg: string;
-}[] = [
-  { id: 1, source: "Tekniker",  time: "08:15", type: "critical", category: "parts",
-    msg: "⚠ SAKNAD RESERVDEL: GE03 kräver hydraulventil P/N HV-4412 som ej finns i lager. Plan markeras HOLD." },
-  { id: 2, source: "Vapensmed", time: "08:31", type: "warning",  category: "ammo",
-    msg: "Lager för Meteor-robotar nere på 25 % – beställning rekommenderas omedelbart." },
-  { id: 3, source: "Väder",     time: "08:20", type: "warning",  category: "fuel",
-    msg: "Vindstyrka ökar på Runway 09, rekommenderar försiktighet vid landning." },
-  { id: 4, source: "Tekniker",  time: "08:38", type: "success",  category: "personnel",
-    msg: "GE05 klar för pre-flight check. Systemtest godkänt." },
-  { id: 5, source: "Logistik",  time: "08:42", type: "info",     category: "parts",
-    msg: "Reservdel RM12 anländer om 2 timmar från MOB förråd." },
-  { id: 6, source: "Logistik",  time: "08:05", type: "info",     category: "fuel",
-    msg: "Bränsletransport #3 avgick från MOB. Beräknad ankomst om 3h." },
-  { id: 7, source: "Vapensmed", time: "07:55", type: "info",     category: "ammo",
-    msg: "GBU-39 bestånd påfyllt. 16/24 tillgängliga. Nästa leverans fredag." },
-  { id: 8, source: "HR",        time: "07:40", type: "warning",  category: "personnel",
-    msg: "Team Beta påbörjar viloperiod 08:00–12:00. Reducerad kapacitet under perioden." },
-];
+export type IntelFeedItem = {
+  id: string;
+  source: string;
+  time: string;
+  type: "critical" | "warning" | "success" | "info";
+  category: FeedCategory;
+  msg: string;
+};
+
+function categorize(message: string): FeedCategory {
+  const m = message.toLowerCase();
+  if (m.includes("bränsle") || m.includes("fuel") || m.includes("tank")) return "fuel";
+  if (m.includes("ammo") || m.includes("robot") || m.includes("vapen") || m.includes("beväpning")) return "ammo";
+  if (m.includes("reservdel") || m.includes("lru") || m.includes("motor") || m.includes("radar")) return "parts";
+  if (m.includes("personal") || m.includes("mekaniker") || m.includes("pilot") || m.includes("tekniker") || m.includes("vapensmed")) return "personnel";
+  return "general";
+}
+
+export function buildIntelFeed(base: Base, events: GameEvent[]): IntelFeedItem[] {
+  const items: IntelFeedItem[] = [];
+
+  // Resource-driven alerts
+  if (base.fuel < 30) {
+    items.push({
+      id: `fuel-low-${base.id}`,
+      source: "Bränsle",
+      time: "--:--",
+      type: base.fuel < 15 ? "critical" : "warning",
+      category: "fuel",
+      msg: `Bränslenivå ${base.fuel.toFixed(0)}% vid ${base.id}.`,
+    });
+  }
+
+  const totalAmmo = base.ammunition.reduce((s, a) => s + a.quantity, 0);
+  const maxAmmo = base.ammunition.reduce((s, a) => s + a.max, 0);
+  const ammoPct = maxAmmo > 0 ? Math.round((totalAmmo / maxAmmo) * 100) : 0;
+  if (ammoPct < 30) {
+    items.push({
+      id: `ammo-low-${base.id}`,
+      source: "Vapensmed",
+      time: "--:--",
+      type: ammoPct < 15 ? "critical" : "warning",
+      category: "ammo",
+      msg: `Ammunitionsnivå låg (${ammoPct}%) vid ${base.id}.`,
+    });
+  }
+
+  base.spareParts.forEach((p) => {
+    const pct = (p.quantity / p.maxQuantity) * 100;
+    if (pct < 30) {
+      items.push({
+        id: `part-low-${base.id}-${p.id}`,
+        source: "Reservdel",
+        time: "--:--",
+        type: pct < 15 ? "critical" : "warning",
+        category: "parts",
+        msg: `${p.name} låg (${p.quantity}/${p.maxQuantity}) vid ${base.id}.`,
+      });
+    }
+  });
+
+  const personnelAvail = base.personnel.reduce((s, p) => s + p.available, 0);
+  const personnelTotal = base.personnel.reduce((s, p) => s + p.total, 0);
+  const personnelPct = personnelTotal > 0 ? Math.round((personnelAvail / personnelTotal) * 100) : 0;
+  if (personnelPct < 50) {
+    items.push({
+      id: `personnel-low-${base.id}`,
+      source: "Personal",
+      time: "--:--",
+      type: personnelPct < 30 ? "critical" : "warning",
+      category: "personnel",
+      msg: `Personal tillgänglig ${personnelAvail}/${personnelTotal} vid ${base.id}.`,
+    });
+  }
+
+  // Game events → feed
+  events
+    .filter((e) => !e.base || e.base === base.id)
+    .slice(0, 20)
+    .forEach((e, i) => {
+      items.push({
+        id: `evt-${e.id ?? i}`,
+        source: e.actionType ? e.actionType.replace(/_/g, " ") : "Händelse",
+        time: e.timestamp?.split(" ")?.[2]?.slice(0, 5) ?? "--:--",
+        type: e.type,
+        category: categorize(e.message),
+        msg: e.message,
+      });
+    });
+
+  return items;
+}
 
 const TEAM_STATUS = [
   { team: "Team Alpha", task: "Arbetar med GE01",  status: "busy"  },
@@ -122,7 +193,7 @@ function MiniBar({ label, pct, color, count }: { label: string; pct: number; col
   );
 }
 
-function IntelBubble({ item }: { item: typeof INTEL_FEED[0] }) {
+function IntelBubble({ item }: { item: IntelFeedItem }) {
   const cfg = FEED_CFG[item.type as keyof typeof FEED_CFG];
   const Icon = cfg.icon;
   return (
@@ -151,9 +222,9 @@ function IntelBubble({ item }: { item: typeof INTEL_FEED[0] }) {
 }
 
 // Mini filtered feed strip (shown at bottom of each section)
-function SectionFeed({ category }: { category: FeedCategory }) {
-  const items = INTEL_FEED.filter(f => f.category === category);
-  if (items.length === 0) return null;
+function SectionFeed({ category, items }: { category: FeedCategory; items: IntelFeedItem[] }) {
+  const filtered = items.filter(f => f.category === category);
+  if (filtered.length === 0) return null;
   return (
     <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(215,222,225,0.07)" }}>
       <div style={{
@@ -167,9 +238,9 @@ function SectionFeed({ category }: { category: FeedCategory }) {
           background: "rgba(217,25,46,0.18)", color: RED, borderRadius: 6,
           padding: "1px 4px", fontSize: 6, fontFamily: "monospace", fontWeight: 700,
           border: "1px solid rgba(217,25,46,0.3)",
-        }}>{items.length}</span>
+        }}>{filtered.length}</span>
       </div>
-      {items.map(item => <IntelBubble key={item.id} item={item} />)}
+      {filtered.map(item => <IntelBubble key={item.id} item={item} />)}
     </div>
   );
 }
@@ -259,9 +330,9 @@ function Row({ label, value, critical }: { label: string; value: string; critica
 }
 
 // ─── Main export ───────────────────────────────────────────────────────────────
-interface Props { base: Base; phase: ScenarioPhase; }
+interface Props { base: Base; phase: ScenarioPhase; events: GameEvent[]; }
 
-export function IntelligenceSidebar({ base, phase }: Props) {
+export function IntelligenceSidebar({ base, phase, events }: Props) {
   const [expanded, setExpanded]           = useState(false);
   const [activeSection, setActiveSection] = useState<ActiveSection>(null);
   const scrollRef                         = useRef<HTMLDivElement>(null);
@@ -289,7 +360,8 @@ export function IntelligenceSidebar({ base, phase }: Props) {
 
   const criticalParts  = base.spareParts.filter(p => p.quantity / p.maxQuantity < 0.30);
   const secondaryParts = base.spareParts.filter(p => p.quantity / p.maxQuantity >= 0.30);
-  const criticalIntel  = INTEL_FEED.filter(f => f.type === "critical").length;
+  const feedItems = buildIntelFeed(base, events);
+  const criticalIntel  = feedItems.filter(f => f.type === "critical" || f.type === "warning").length;
 
   const panelW = 300;
   const stripW = 48;
@@ -370,7 +442,7 @@ export function IntelligenceSidebar({ base, phase }: Props) {
                 count={`${fuelLiters.toLocaleString("sv-SE")} L`} />
               <Row label="Förbrukning"  value={`${fuelRate} %/h`} />
               <Row label="Tom om"       value={`~${etdHours}h  (${etdTime})`} critical={etdHours < 12} />
-              <SectionFeed category="fuel" />
+            <SectionFeed category="fuel" items={feedItems} />
             </Section>
 
             {/* ── Ammo ── */}
@@ -384,7 +456,7 @@ export function IntelligenceSidebar({ base, phase }: Props) {
                     count={`${a.quantity}/${a.max}`} />
                 );
               })}
-              <SectionFeed category="ammo" />
+            <SectionFeed category="ammo" items={feedItems} />
             </Section>
 
             {/* ── Spare parts + Maintenance bays ── */}
@@ -419,7 +491,7 @@ export function IntelligenceSidebar({ base, phase }: Props) {
                 color="#22A05A"
                 count={`${base.maintenanceBays.total - base.maintenanceBays.occupied}/${base.maintenanceBays.total}`}
               />
-              <SectionFeed category="parts" />
+            <SectionFeed category="parts" items={feedItems} />
             </Section>
 
             {/* ── Personnel ── */}
@@ -446,7 +518,7 @@ export function IntelligenceSidebar({ base, phase }: Props) {
                   </span>
                 </div>
               ))}
-              <SectionFeed category="personnel" />
+            <SectionFeed category="personnel" items={feedItems} />
             </Section>
 
             {/* ── Full intelligence feed ── */}
@@ -461,7 +533,7 @@ export function IntelligenceSidebar({ base, phase }: Props) {
                   border: "1px solid rgba(217,25,46,0.35)", marginLeft: 4, marginBottom: 8,
                 }}>LIVE</span>
               </div>
-              {INTEL_FEED.map(item => <IntelBubble key={item.id} item={item} />)}
+              {feedItems.map(item => <IntelBubble key={item.id} item={item} />)}
             </Section>
           </motion.div>
         )}
