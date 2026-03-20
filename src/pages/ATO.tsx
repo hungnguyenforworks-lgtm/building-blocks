@@ -34,6 +34,7 @@ const missionIcons: Partial<Record<MissionType, React.ReactNode>> = {
   AI_ST: <Zap className="h-4 w-4" />,
   ESCORT: <Shield className="h-4 w-4" />,
   TRANSPORT: <Plane className="h-4 w-4" />,
+  REBASE: <MapPin className="h-4 w-4" />,
 };
 
 const priorityColor = {

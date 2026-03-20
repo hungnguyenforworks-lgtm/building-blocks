@@ -240,20 +240,63 @@ function handleIncrementTime(state: GameState): GameState {
     ? generateATOOrders(nextDay, nextPhase)
     : state.atoOrders;
 
-  // Mark completed orders and collect returning aircraft
+  // Mark completed orders and collect returning aircraft (REBASE orders excluded from normal return)
   const returningAircraft: { aircraftId: string; baseId: string }[] = [];
   const updatedATOOrders = newATOOrders.map((o) => {
     if (o.status === "dispatched" && nextHour >= o.endHour) {
-      o.assignedAircraft.forEach((acId) =>
-        returningAircraft.push({ aircraftId: acId, baseId: o.launchBase })
-      );
+      if (o.missionType !== "REBASE") {
+        o.assignedAircraft.forEach((acId) =>
+          returningAircraft.push({ aircraftId: acId, baseId: o.launchBase })
+        );
+      }
       return { ...o, status: "completed" as const };
     }
     return o;
   });
 
-  // Set returning aircraft to "returning" status — LandingReceptionModal handles resolution
-  const basesAfterReturn = updatedBases.map((base) => ({
+  // Handle REBASE completions — move aircraft to their target base
+  const rebaseTransfers: { aircraftId: string; fromBaseId: string; toBaseId: string }[] = [];
+  updatedBases.forEach((base) => {
+    base.aircraft.forEach((ac) => {
+      if (
+        ac.status === "on_mission" &&
+        ac.currentMission === "REBASE" &&
+        ac.rebaseTarget &&
+        ac.missionEndHour !== undefined &&
+        nextHour >= ac.missionEndHour
+      ) {
+        rebaseTransfers.push({ aircraftId: ac.id, fromBaseId: base.id, toBaseId: ac.rebaseTarget });
+      }
+    });
+  });
+
+  let basesAfterRebases = updatedBases;
+  for (const transfer of rebaseTransfers) {
+    const srcAircraft = basesAfterRebases
+      .find((b) => b.id === transfer.fromBaseId)
+      ?.aircraft.find((a) => a.id === transfer.aircraftId);
+    if (!srcAircraft) continue;
+    const arrivedAircraft = {
+      ...srcAircraft,
+      currentBase: transfer.toBaseId as BaseType,
+      status: "ready" as AircraftStatus,
+      currentMission: undefined,
+      missionEndHour: undefined,
+      rebaseTarget: undefined,
+    };
+    basesAfterRebases = basesAfterRebases.map((base) => {
+      if (base.id === transfer.fromBaseId) {
+        return { ...base, aircraft: base.aircraft.filter((a) => a.id !== transfer.aircraftId) };
+      }
+      if (base.id === transfer.toBaseId) {
+        return { ...base, aircraft: [...base.aircraft, arrivedAircraft] };
+      }
+      return base;
+    });
+  }
+
+  // Set remaining on_mission aircraft to "returning" — LandingReceptionModal handles resolution
+  const basesAfterReturn = basesAfterRebases.map((base) => ({
     ...base,
     aircraft: base.aircraft.map((ac) => {
       if (ac.status === "on_mission") {

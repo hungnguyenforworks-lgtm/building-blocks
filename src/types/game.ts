@@ -1,7 +1,7 @@
 // ── Base enums ────────────────────────────────────────────────────────────
 export type BaseType = "MOB" | "FOB_N" | "FOB_S" | "ROB_N" | "ROB_S" | "ROB_E";
 export type AircraftType = "GripenE" | "GripenF_EA" | "GlobalEye" | "VLO_UCAV" | "LOTUS";
-export type MissionType = "DCA" | "QRA" | "RECCE" | "AEW" | "AI_DT" | "AI_ST" | "ESCORT" | "TRANSPORT";
+export type MissionType = "DCA" | "QRA" | "RECCE" | "AEW" | "AI_DT" | "AI_ST" | "ESCORT" | "TRANSPORT" | "REBASE";
 export type ScenarioPhase = "FRED" | "KRIS" | "KRIG";
 export type MaintenanceType = "quick_lru" | "complex_lru" | "direct_repair" | "troubleshooting" | "scheduled_service";
 
@@ -172,7 +172,8 @@ export type GameAction =
   | { type: "MARK_FAULT_NMC"; baseId: BaseType; aircraftId: string; repairTime: number; maintenanceTypeKey: string; actionLabel: string; requiredSparePart?: string }
   | { type: "CONSUME_SPARE_PART"; baseId: BaseType; sparePartId: string; quantity?: number }
   | { type: "RESET_GAME" }
-  | { type: "IMPORT_ATO_BATCH"; orders: Omit<ATOOrder, "id" | "status" | "assignedAircraft">[]; sourceFile: string; riskCount: number };
+  | { type: "IMPORT_ATO_BATCH"; orders: Omit<ATOOrder, "id" | "status" | "assignedAircraft">[]; sourceFile: string; riskCount: number }
+  | { type: "REBASE_AIRCRAFT"; aircraftId: string; fromBase: BaseType; toBase: BaseType };
 
 // ── Core interfaces ───────────────────────────────────────────────────────
 export interface Aircraft {
@@ -186,6 +187,7 @@ export interface Aircraft {
   health: number; // 0–100%; 0 = NMC (red), >30 = flyable (blue)
   currentMission?: MissionType;
   missionEndHour?: number; // hour at which drag-drop mission completes
+  rebaseTarget?: BaseType; // destination base for REBASE missions
   payload?: string;
   maintenanceTimeRemaining?: number;
   maintenanceType?: MaintenanceType;
@@ -289,6 +291,7 @@ export interface ATOOrder {
   status: "pending" | "assigned" | "dispatched" | "completed";
   assignedAircraft: string[];
   sortiesPerDay?: number;
+  targetBase?: BaseType; // destination base for REBASE orders
   /** Target area name for mission routing, e.g. "Gotland East" */
   destinationName?: string;
   /** Target coordinates for map tracking */

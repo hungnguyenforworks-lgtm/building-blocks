@@ -149,9 +149,78 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ),
       };
 
+    case "REBASE_AIRCRAFT":
+      return handleRebaseAircraft(state, action.aircraftId, action.fromBase, action.toBase);
+
     default:
       return state;
   }
+}
+
+const REBASE_TRANSIT_HOURS = 2;
+
+function handleRebaseAircraft(
+  state: GameState,
+  aircraftId: string,
+  fromBaseId: string,
+  toBaseId: string,
+): GameState {
+  const fromBase = state.bases.find((b) => b.id === fromBaseId);
+  const aircraft = fromBase?.aircraft.find((a) => a.id === aircraftId);
+  if (!aircraft) return state;
+
+  const missionEndHour = state.hour + REBASE_TRANSIT_HOURS;
+  const toBase = state.bases.find((b) => b.id === toBaseId);
+  const toBaseName = toBase?.name ?? toBaseId;
+
+  // Set aircraft to on_mission with rebaseTarget stored on the aircraft
+  const updatedBases = state.bases.map((base) =>
+    base.id === fromBaseId
+      ? {
+          ...base,
+          aircraft: base.aircraft.map((ac) =>
+            ac.id === aircraftId
+              ? {
+                  ...ac,
+                  status: "on_mission" as AircraftStatus,
+                  currentMission: "REBASE" as MissionType,
+                  missionEndHour,
+                  rebaseTarget: toBaseId as typeof ac.currentBase,
+                }
+              : ac
+          ),
+        }
+      : base
+  );
+
+  // Create a dispatched REBASE ATO order for tracking
+  const rebaseOrder = {
+    id: `rebase-${uuid().slice(0, 8)}`,
+    day: state.day,
+    missionType: "REBASE" as MissionType,
+    label: `Ombasering ${aircraft.tailNumber} → ${toBaseName}`,
+    startHour: state.hour,
+    endHour: missionEndHour,
+    requiredCount: 1,
+    launchBase: fromBaseId as typeof aircraft.currentBase,
+    targetBase: toBaseId as typeof aircraft.currentBase,
+    priority: "high" as const,
+    status: "dispatched" as const,
+    assignedAircraft: [aircraftId],
+  };
+
+  return addEvent(
+    { ...state, bases: updatedBases, atoOrders: [...state.atoOrders, rebaseOrder] },
+    {
+      type: "info",
+      message: `${aircraft.tailNumber} ombasering påbörjad → ${toBaseName} (ankomst ${String(missionEndHour % 24).padStart(2, "0")}:00Z)`,
+      base: fromBaseId as typeof aircraft.currentBase,
+      aircraftId: aircraft.tailNumber,
+      riskLevel: "low",
+      resourceImpact: `Ombasering från ${fromBaseId} till ${toBaseId}`,
+      decisionContext: "Ombasering utförd manuellt",
+    }
+  );
 }
 
 function handleAdvancePhase(state: GameState): GameState {
@@ -205,11 +274,13 @@ function handleDispatchOrder(state: GameState, orderId: string): GameState {
     if (base.id !== order.launchBase) return base;
     return {
       ...base,
-      aircraft: base.aircraft.map((ac) =>
-        order.assignedAircraft.includes(ac.id) && isMissionCapable(ac.status)
-          ? { ...ac, status: "on_mission" as AircraftStatus, currentMission: order.missionType }
-          : ac
-      ),
+      aircraft: base.aircraft.map((ac) => {
+        if (!order.assignedAircraft.includes(ac.id) || !isMissionCapable(ac.status)) return ac;
+        const extra = order.missionType === "REBASE" && order.targetBase
+          ? { missionEndHour: order.endHour, rebaseTarget: order.targetBase }
+          : {};
+        return { ...ac, status: "on_mission" as AircraftStatus, currentMission: order.missionType, ...extra };
+      }),
     };
   });
 

@@ -14,7 +14,12 @@ import {
 } from "lucide-react";
 import grippenSilhouette from "@/assets/gripen-silhouette.png";
 import { useGame } from "@/context/GameContext";
-import type { Aircraft } from "@/types/game";
+import type { Aircraft, AircraftStatus, BaseType } from "@/types/game";
+import { toast } from "sonner";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { PILOT_ROSTER } from "@/data/pilotRoster";
 
 // ─── Static rosters (deterministic per tail number) ──────────────────────────
@@ -770,7 +775,7 @@ type DashTab = "oversikt" | "system" | "vapen" | "operationer" | "anmarkningar";
 export default function AircraftDashboard({ embedded = false, aircraftTailNumber }: { embedded?: boolean; aircraftTailNumber?: string } = {}) {
   const { tailNumber: paramTailNumber } = useParams<{ tailNumber: string }>();
   const tailNumber = aircraftTailNumber ?? paramTailNumber;
-  const { state } = useGame();
+  const { state, rebaseAircraft } = useGame();
   const navigate = useNavigate();
 
   const aircraft = state.bases.flatMap((b) => b.aircraft).find((a) => a.tailNumber === tailNumber);
@@ -778,6 +783,8 @@ export default function AircraftDashboard({ embedded = false, aircraftTailNumber
   const [activeTab, setActiveTab]   = useState<DashTab>("oversikt");
   const [modal, setModal]           = useState<"pilot" | "crew" | "missions" | null>(null);
   const [snagFilter, setSnagFilter] = useState<"all" | "green" | "yellow" | "red">("all");
+  const [rebaseOpen, setRebaseOpen] = useState(false);
+  const [pendingToBase, setPendingToBase] = useState<BaseType | null>(null);
 
   if (!aircraft) {
     return (
@@ -797,6 +804,22 @@ export default function AircraftDashboard({ embedded = false, aircraftTailNumber
 
   const ac            = aircraft;
   const sm            = STATUS_META[ac.status] ?? STATUS_META.unavailable;
+
+  const BLOCKED_STATUSES: AircraftStatus[] = [
+    "on_mission", "in_preparation", "awaiting_launch", "returning", "recovering", "allocated",
+  ];
+  const canRebase  = !BLOCKED_STATUSES.includes(ac.status);
+  const otherBases = state.bases.filter((b) => b.id !== ac.currentBase);
+
+  function handleConfirmRebase() {
+    if (!pendingToBase) return;
+    rebaseAircraft(ac.id, ac.currentBase, pendingToBase);
+    const destName = state.bases.find((b) => b.id === pendingToBase)?.name ?? pendingToBase;
+    toast.success(`${ac.tailNumber} ombaserad till ${destName}`);
+    setRebaseOpen(false);
+    setPendingToBase(null);
+    if (!embedded) navigate("/");
+  }
   const components    = deriveComponents(ac);
   const subComponents = deriveSubComponents(ac);
   const mainLog       = deriveMaintenanceLog(ac);
@@ -875,6 +898,19 @@ export default function AircraftDashboard({ embedded = false, aircraftTailNumber
                     UH: {ac.maintenanceType.replace(/_/g, " ")}{ac.maintenanceTimeRemaining != null ? ` · ${ac.maintenanceTimeRemaining}h kvar` : ""}
                   </span>
                 )}
+                <button
+                  onClick={() => setRebaseOpen(true)}
+                  disabled={!canRebase}
+                  className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full border transition-colors ${
+                    canRebase
+                      ? "text-cyan-300 bg-cyan-300/10 border-cyan-300/30 hover:bg-cyan-300/20 cursor-pointer"
+                      : "text-[#D7DEE1]/30 bg-white/5 border-white/10 cursor-not-allowed"
+                  }`}
+                  title={canRebase ? "Ombasera till annan bas" : "Kan ej ombasera — plan aktivt"}
+                >
+                  <Target className="h-3 w-3" />
+                  OMBASERING
+                </button>
               </div>
             </div>
             {/* Silhouette */}
@@ -1516,6 +1552,74 @@ export default function AircraftDashboard({ embedded = false, aircraftTailNumber
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── REBASE DIALOG ── */}
+      <Dialog open={rebaseOpen} onOpenChange={setRebaseOpen}>
+        <DialogContent
+          className="font-mono max-w-sm"
+          style={{ background: "#0A1C3E", border: "1px solid rgba(215,222,225,0.15)", color: "#D7DEE1" }}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-[#D7DEE1] font-mono text-base font-black tracking-wide">
+              OMBASERING — {ac.tailNumber}
+            </DialogTitle>
+            <p className="text-[11px] text-[#D7DEE1]/50 pt-1">
+              Välj destinationsbas. Nuvarande: <span className="text-[#D7DEE1]">{ac.currentBase}</span>
+            </p>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            {otherBases.map((base) => {
+              const isSelected = pendingToBase === base.id;
+              const mcCount = base.aircraft.filter((a) => a.status === "ready").length;
+              return (
+                <button
+                  key={base.id}
+                  onClick={() => setPendingToBase(base.id as BaseType)}
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all text-left"
+                  style={{
+                    background: isSelected ? "rgba(34,211,238,0.12)" : "rgba(255,255,255,0.04)",
+                    border: `1px solid ${isSelected ? "rgba(34,211,238,0.5)" : "rgba(215,222,225,0.12)"}`,
+                  }}
+                >
+                  <div>
+                    <div className="text-[12px] font-bold text-[#D7DEE1]">{base.name}</div>
+                    <div className="text-[10px] text-[#D7DEE1]/45 uppercase tracking-wider mt-0.5">
+                      {base.type} · {base.id}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[11px] font-mono text-[#D7DEE1]/70">{base.aircraft.length} plan</div>
+                    <div className="text-[10px] font-mono text-green-400">{mcCount} MC</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <DialogFooter className="flex gap-2 pt-2">
+            <DialogClose asChild>
+              <Button
+                variant="ghost"
+                className="flex-1 font-mono text-[11px]"
+                onClick={() => setPendingToBase(null)}
+              >
+                Avbryt
+              </Button>
+            </DialogClose>
+            <Button
+              disabled={!pendingToBase}
+              onClick={handleConfirmRebase}
+              className="flex-1 font-mono text-[11px] font-bold"
+              style={{
+                background: pendingToBase ? "rgba(34,211,238,0.2)" : "rgba(255,255,255,0.05)",
+                border: `1px solid ${pendingToBase ? "rgba(34,211,238,0.5)" : "rgba(255,255,255,0.1)"}`,
+                color: pendingToBase ? "#22d3ee" : "rgba(215,222,225,0.3)",
+              }}
+            >
+              Bekräfta ombasering
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

@@ -32,6 +32,7 @@ export interface GameEngine {
   pauseMaintenance: (baseId: string, aircraftId: string) => void;
   markFaultNMC: (baseId: string, aircraftId: string, repairTime: number, maintenanceTypeKey: string, actionLabel: string, requiredSparePart?: string) => void;
   consumeSparePart: (baseId: string, sparePartId: string, quantity?: number) => void;
+  rebaseAircraft: (aircraftId: string, fromBase: BaseType, toBase: BaseType) => void;
 }
 
 export function useGameEngine(): GameEngine {
@@ -122,6 +123,10 @@ export function useGameEngine(): GameEngine {
     dispatch({ type: "CONSUME_SPARE_PART", baseId: baseId as BaseType, sparePartId, quantity });
   }, []);
 
+  const rebaseAircraft = useCallback((aircraftId: string, fromBase: BaseType, toBase: BaseType) => {
+    dispatch({ type: "REBASE_AIRCRAFT", aircraftId, fromBase, toBase });
+  }, []);
+
   const importATOBatch = useCallback((
     orders: Omit<ATOOrder, "id" | "status" | "assignedAircraft">[],
     sourceFile: string,
@@ -173,13 +178,13 @@ export function useGameEngine(): GameEngine {
     applyUtfallOutcome, completeLandingCheck, resetGame, getResourceSummary,
     createATOOrder, editATOOrder, deleteATOOrder,
     applyRecommendation, dismissRecommendation, hangarDropConfirm, pauseMaintenance, markFaultNMC,
-    consumeSparePart, importATOBatch,
+    consumeSparePart, importATOBatch, rebaseAircraft,
   }), [
     state, advanceTurn, startMaintenance, sendOnMission, assignAircraftToOrder,
     dispatchOrder, moveAircraftToMaintenance, sendMissionDrop,
     applyUtfallOutcome, completeLandingCheck, resetGame, getResourceSummary,
     createATOOrder, editATOOrder, deleteATOOrder,
     applyRecommendation, dismissRecommendation, hangarDropConfirm, pauseMaintenance, markFaultNMC,
-    consumeSparePart, importATOBatch,
+    consumeSparePart, importATOBatch, rebaseAircraft,
   ]);
 }

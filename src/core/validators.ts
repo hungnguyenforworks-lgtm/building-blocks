@@ -1,4 +1,4 @@
-import type { GameState, GameAction } from "@/types/game";
+import type { GameState, GameAction, AircraftStatus } from "@/types/game";
 import { isMissionCapable } from "@/types/game";
 
 export interface ValidationResult {
@@ -101,6 +101,20 @@ export function validateAction(state: GameState, action: GameAction): Validation
     case "ADVANCE_PHASE":
     case "RESET_GAME":
       return { valid: true };
+
+    case "REBASE_AIRCRAFT": {
+      const fromBase = state.bases.find((b) => b.id === action.fromBase);
+      if (!fromBase) return { valid: false, reason: "Avsändarbas ej hittad" };
+      const ac = fromBase.aircraft.find((a) => a.id === action.aircraftId);
+      if (!ac) return { valid: false, reason: "Flygplan ej hittat vid angiven bas" };
+      const blocked: AircraftStatus[] = ["on_mission", "in_preparation", "awaiting_launch", "returning", "recovering", "allocated"];
+      if (blocked.includes(ac.status)) {
+        return { valid: false, reason: `Kan ej ombasera ${ac.tailNumber} — status: ${ac.status}` };
+      }
+      if (action.fromBase === action.toBase) return { valid: false, reason: "Samma bas" };
+      if (!state.bases.find((b) => b.id === action.toBase)) return { valid: false, reason: "Destinationsbas ej hittad" };
+      return { valid: true };
+    }
 
     default:
       return { valid: false, reason: "Unknown action type" };

@@ -10,9 +10,9 @@ interface ATOEditorProps {
   onCancel: () => void;
 }
 
-const MISSION_TYPES: MissionType[] = ["DCA", "QRA", "RECCE", "AEW", "AI_DT", "AI_ST", "ESCORT", "TRANSPORT"];
+const MISSION_TYPES: MissionType[] = ["DCA", "QRA", "RECCE", "AEW", "AI_DT", "AI_ST", "ESCORT", "TRANSPORT", "REBASE"];
 const AIRCRAFT_TYPES: AircraftType[] = ["GripenE", "GripenF_EA", "GlobalEye", "VLO_UCAV", "LOTUS"];
-const BASES: BaseType[] = ["MOB"];
+const BASES: BaseType[] = ["MOB", "FOB_N", "FOB_S", "ROB_N", "ROB_S", "ROB_E"];
 const PRIORITIES = ["high", "medium", "low"] as const;
 
 export function ATOEditor({ order, defaultStartHour, availableAircraft, onSave, onCancel }: ATOEditorProps) {
@@ -26,6 +26,7 @@ export function ATOEditor({ order, defaultStartHour, availableAircraft, onSave, 
   const [aircraftType, setAircraftType] = useState<AircraftType | "">(order?.aircraftType ?? "");
   const [payload, setPayload] = useState(order?.payload ?? "");
   const [launchBase, setLaunchBase] = useState<BaseType>(order?.launchBase ?? "MOB");
+  const [targetBase, setTargetBase] = useState<BaseType | "">(order?.targetBase ?? "");
   const [priority, setPriority] = useState<"high" | "medium" | "low">(order?.priority ?? "medium");
   const [day, setDay] = useState(order?.day ?? 1);
   const [selectedAircraftIds, setSelectedAircraftIds] = useState<string[]>([]);
@@ -64,6 +65,7 @@ export function ATOEditor({ order, defaultStartHour, availableAircraft, onSave, 
         aircraftType: finalAircraftType,
         payload: finalPayload,
         launchBase,
+        targetBase: (missionType === "REBASE" && targetBase) ? targetBase as BaseType : undefined,
         priority,
         sortiesPerDay: undefined,
         destinationName: destinationName || undefined,
@@ -208,6 +210,21 @@ export function ATOEditor({ order, defaultStartHour, availableAircraft, onSave, 
               </select>
             </div>
           </div>
+
+          {missionType === "REBASE" && (
+            <div>
+              <label className="text-[10px] font-mono font-bold block mb-1" style={{ color: "hsl(218 15% 45%)" }}>DESTINATIONSBAS</label>
+              <select
+                value={targetBase}
+                onChange={(e) => setTargetBase(e.target.value as BaseType)}
+                className="w-full px-3 py-2 rounded-lg text-xs font-mono"
+                style={fieldStyle}
+              >
+                <option value="">— Välj destinationsbas —</option>
+                {BASES.filter((b) => b !== launchBase).map((b) => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="text-[10px] font-mono font-bold block mb-1" style={{ color: "hsl(218 15% 45%)" }}>LASTNING / BEVÄPNING</label>
