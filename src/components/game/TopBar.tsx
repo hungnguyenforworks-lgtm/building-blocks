@@ -28,7 +28,7 @@ export function TopBar({ state, onAdvanceTurn, onReset }: TopBarProps) {
     >
       {/* Brand */}
       <div className="flex items-center gap-5">
-        <div className="flex items-center gap-3">
+        <NavLink to="/" className="flex items-center gap-3" title="Basöversikt">
           <div className="relative flex items-center justify-center w-9 h-9 rounded-lg overflow-hidden"
             style={{ background: "hsl(42 64% 53% / 0.15)", border: "1px solid hsl(42 64% 53% / 0.4)" }}>
             <img
@@ -48,7 +48,7 @@ export function TopBar({ state, onAdvanceTurn, onReset }: TopBarProps) {
               SAAB SMART AIRBASE SIM
             </span>
           </div>
-        </div>
+        </NavLink>
 
         {/* Nav */}
         <nav className="flex items-center gap-0.5 ml-2">

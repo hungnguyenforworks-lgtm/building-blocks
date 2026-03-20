@@ -15,6 +15,7 @@ const createSpareParts = (): SparePartStock[] => [
 // MOB (scale=1) = 150 total. ~13 crew per aircraft in service → realistic for 8-bay operation.
 // FOB_N (scale=0.7) ≈ 105, FOB_S (scale=0.5) ≈ 75
 const createPersonnel = (scale: number): PersonnelGroup[] => [
+  { id: "pilot",   role: "Pilot",                 available: Math.round(20 * scale), total: Math.round(24 * scale), onDuty: true },
   { id: "mech",    role: "Flygmekaniker",        available: Math.round(65 * scale), total: Math.round(80 * scale), onDuty: true },
   { id: "tech",    role: "Tekniker Avionik",      available: Math.round(24 * scale), total: Math.round(30 * scale), onDuty: true },
   { id: "arms",    role: "Vapensmed",             available: Math.round(16 * scale), total: Math.round(20 * scale), onDuty: true },
