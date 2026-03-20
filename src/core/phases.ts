@@ -211,9 +211,12 @@ function handleIncrementTime(state: GameState): GameState {
 
   // Fuel drain + per-aircraft health wear
   const fuelDrain = FUEL_DRAIN_RATE[nextPhase] ?? 0.5;
-  const updatedBases = state.bases.map((base) => ({
+  const updatedBases = state.bases.map((base) => {
+    const anyOnMission = base.aircraft.some((ac) => ac.status === "on_mission");
+    const drain = anyOnMission ? fuelDrain : 0;
+    return ({
     ...base,
-    fuel: Math.max(0, base.fuel - fuelDrain),
+    fuel: Math.max(0, base.fuel - drain),
     aircraft: base.aircraft.map((ac) => {
       let wear = 0;
       if (ac.status === "ready" || ac.status === "allocated") {
@@ -233,7 +236,8 @@ function handleIncrementTime(state: GameState): GameState {
       }
       return { ...ac, health: newHealth, hoursToService: newHoursToService };
     }),
-  }));
+  });
+  });
 
   // Generate new ATO on day rollover
   const newATOOrders = dayRollover
