@@ -1,7 +1,7 @@
 import { GameState } from "@/types/game";
 import { PhaseBadge } from "./StatusBadge";
 import { getPhaseDefinition } from "@/data/config/phases";
-import { Clock, RotateCcw, Send, LayoutDashboard, Map, ChevronRight } from "lucide-react";
+import { Clock, RotateCcw, LayoutDashboard, Map, ChevronRight } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import gripenSilhouette from "@/assets/gripen-silhouette.png";
 
@@ -54,7 +54,6 @@ export function TopBar({ state, onAdvanceTurn, onReset }: TopBarProps) {
         <nav className="flex items-center gap-0.5 ml-2">
           {[
             { to: "/", icon: <LayoutDashboard className="h-3.5 w-3.5" />, label: "DASHBOARD" },
-            { to: "/ato", icon: <Send className="h-3.5 w-3.5" />, label: "ATO" },
             { to: "/map", icon: <Map className="h-3.5 w-3.5" />, label: "KARTA" },
           ].map(({ to, icon, label }) => (
             <NavLink

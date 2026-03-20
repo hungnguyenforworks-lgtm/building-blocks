@@ -1,15 +1,18 @@
 import { Aircraft } from "@/types/game";
 import { Row } from "./StatBox";
-import { Plane, RotateCcw } from "lucide-react";
+import { Plane, RotateCcw, User } from "lucide-react";
+import { PILOT_ROSTER } from "@/data/pilotRoster";
 
 export function AircraftDetailPanel({
   aircraft,
   onBack,
   onRecall,
+  currentHour,
 }: {
   aircraft: Aircraft;
   onBack: () => void;
   onRecall?: () => void;
+  currentHour?: number;
 }) {
   const statusMap: Record<string, { label: string; cls: string }> = {
     ready: { label: "Mission Capable", cls: "text-status-green bg-status-green/10 border-status-green/40" },
@@ -27,6 +30,7 @@ export function AircraftDetailPanel({
   const health = aircraft.health ?? 100;
   const healthColor = health < 30 ? "#ef4444" : health < 60 ? "#eab308" : "#22c55e";
   const canRecall = aircraft.status === "on_mission";
+  const pilot = PILOT_ROSTER[aircraft.tailNumber];
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col">
@@ -43,15 +47,54 @@ export function AircraftDetailPanel({
         {s.label}
       </div>
 
-      {/* Current mission badge — always visible */}
-      <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-mono ${
-        aircraft.currentMission
-          ? "border-blue-500/40 bg-blue-500/10 text-blue-400"
-          : "border-border bg-muted/20 text-muted-foreground"
-      }`}>
-        <span className="font-bold">UPPDRAG:</span>
-        <span className="font-bold tracking-wider">{aircraft.currentMission ?? "—"}</span>
+      {/* Pilot */}
+      <div className="flex items-center gap-3 px-3 py-2 rounded-lg border border-border bg-muted/20">
+        <User className="h-4 w-4 text-muted-foreground shrink-0" />
+        {pilot ? (
+          <div className="min-w-0">
+            <div className="text-xs font-bold font-mono text-foreground truncate">{pilot.name}</div>
+            <div className="text-[10px] font-mono text-muted-foreground">
+              <span className="text-amber-400 font-bold">"{pilot.callsign}"</span>
+              {" · "}{pilot.rank}
+            </div>
+          </div>
+        ) : (
+          <span className="text-[10px] font-mono text-muted-foreground">Okänd pilot</span>
+        )}
       </div>
+
+      {/* Current mission badge — always visible */}
+      {(() => {
+        const remaining =
+          aircraft.missionEndHour != null && currentHour != null
+            ? Math.max(0, aircraft.missionEndHour - currentHour)
+            : null;
+        const hasMission = !!aircraft.currentMission;
+        return (
+          <div className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs font-mono ${
+            hasMission
+              ? "border-blue-500/40 bg-blue-500/10 text-blue-400"
+              : "border-border bg-muted/20 text-muted-foreground"
+          }`}>
+            <div className="flex items-center gap-2">
+              <span className="font-bold">UPPDRAG:</span>
+              <span className="font-bold tracking-wider">{aircraft.currentMission ?? "—"}</span>
+            </div>
+            {remaining != null && (
+              <span
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                style={{
+                  background: remaining <= 1 ? "rgba(239,68,68,0.15)" : "rgba(59,130,246,0.15)",
+                  color: remaining <= 1 ? "#f87171" : "#93c5fd",
+                  border: `1px solid ${remaining <= 1 ? "rgba(239,68,68,0.3)" : "rgba(59,130,246,0.3)"}`,
+                }}
+              >
+                {remaining}h kvar
+              </span>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Health bar */}
       <div>

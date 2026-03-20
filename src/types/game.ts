@@ -289,4 +289,12 @@ export interface ATOOrder {
   status: "pending" | "assigned" | "dispatched" | "completed";
   assignedAircraft: string[];
   sortiesPerDay?: number;
+  /** Target area name for mission routing, e.g. "Gotland East" */
+  destinationName?: string;
+  /** Target coordinates for map tracking */
+  coords?: { lat: number; lng: number };
+  /** Radio callsign for the mission package, e.g. "VIPER 1" */
+  missionCallsign?: string;
+  /** Estimated fuel percentage on arrival at destination */
+  fuelOnArrival?: number;
 }

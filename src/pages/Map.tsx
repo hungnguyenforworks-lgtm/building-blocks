@@ -13,6 +13,7 @@ import { SupplyLinesLayer } from "./map/SupplyLinesLayer";
 import { AircraftLayer } from "./map/AircraftLayer";
 import { BaseDetailPanel } from "./map/BaseDetailPanel";
 import { AircraftDetailPanel } from "./map/AircraftDetailPanel";
+import { Base, AircraftStatus } from "@/types/game";
 
 export default function MapPage() {
   const { state, advanceTurn, resetGame, dispatch } = useGame();
@@ -136,6 +137,13 @@ export default function MapPage() {
                 "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,100,0.01) 2px, rgba(0,255,100,0.01) 4px)",
             }}
           />
+
+          {/* Active aircraft bar */}
+          <ActiveAircraftBar
+            bases={state.bases}
+            selectedAircraftId={selectedAircraftId}
+            onSelect={(baseId, aircraftId) => setSelected({ kind: "aircraft", baseId, aircraftId })}
+          />
         </div>
 
         {/* Detail panel */}
@@ -177,6 +185,7 @@ export default function MapPage() {
                   aircraft={selectedAircraft}
                   onBack={() => setSelected({ kind: "base", baseId: selected.baseId })}
                   onRecall={handleRecall}
+                  currentHour={state.hour}
                 />
               ) : selectedBase ? (
                 <BaseDetailPanel
@@ -191,6 +200,132 @@ export default function MapPage() {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+// ── Active aircraft bar ────────────────────────────────────────────────────
+
+const ACTIVE_STATUSES: AircraftStatus[] = ["on_mission", "returning", "in_preparation", "awaiting_launch", "allocated"];
+
+const STATUS_LABEL: Record<string, string> = {
+  on_mission:      "UPP",
+  returning:       "RET",
+  in_preparation:  "KLAR",
+  awaiting_launch: "VÄNT",
+  allocated:       "TILL",
+};
+
+const STATUS_COLOR: Record<string, string> = {
+  on_mission:      "#22c55e",
+  returning:       "#a78bfa",
+  in_preparation:  "#eab308",
+  awaiting_launch: "#22d3ee",
+  allocated:       "#3b82f6",
+};
+
+function ActiveAircraftBar({
+  bases,
+  selectedAircraftId,
+  onSelect,
+}: {
+  bases: Base[];
+  selectedAircraftId: string | undefined;
+  onSelect: (baseId: string, aircraftId: string) => void;
+}) {
+  const activeAircraft = bases.flatMap((base) =>
+    base.aircraft
+      .filter((ac) => ACTIVE_STATUSES.includes(ac.status))
+      .map((ac) => ({ ac, baseId: base.id, baseName: base.name }))
+  );
+
+  if (activeAircraft.length === 0) return null;
+
+  return (
+    <div
+      className="absolute bottom-0 left-0 right-0 z-10"
+      style={{ pointerEvents: "auto" }}
+    >
+      {/* Fade-up gradient so the bar blends into the map */}
+      <div
+        className="h-6 pointer-events-none"
+        style={{ background: "linear-gradient(to bottom, transparent, rgba(5,10,20,0.85))" }}
+      />
+
+      <div
+        className="flex items-center gap-0 overflow-x-auto"
+        style={{
+          background: "rgba(5,10,20,0.92)",
+          borderTop: "1px solid rgba(215,171,58,0.25)",
+          backdropFilter: "blur(6px)",
+          scrollbarWidth: "none",
+        }}
+      >
+        {/* Label */}
+        <div
+          className="shrink-0 px-3 py-2 border-r flex items-center gap-1.5"
+          style={{ borderColor: "rgba(215,171,58,0.2)" }}
+        >
+          <span
+            className="w-1.5 h-1.5 rounded-full animate-pulse"
+            style={{ backgroundColor: "#22c55e" }}
+          />
+          <span className="text-[9px] font-mono font-bold tracking-widest" style={{ color: "#D7AB3A" }}>
+            AKTIVA
+          </span>
+        </div>
+
+        {/* Aircraft chips */}
+        <div className="flex items-center gap-1.5 px-2 py-1.5 flex-nowrap">
+          {activeAircraft.map(({ ac, baseId, baseName }) => {
+            const isSelected = ac.id === selectedAircraftId;
+            const color = STATUS_COLOR[ac.status] ?? "#94a3b8";
+            const label = STATUS_LABEL[ac.status] ?? ac.status;
+
+            return (
+              <button
+                key={ac.id}
+                onClick={(e) => { e.stopPropagation(); onSelect(baseId, ac.id); }}
+                className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded font-mono text-[10px] transition-all"
+                style={{
+                  background: isSelected ? `${color}22` : "rgba(255,255,255,0.04)",
+                  border: `1px solid ${isSelected ? color : "rgba(255,255,255,0.08)"}`,
+                  boxShadow: isSelected ? `0 0 8px ${color}55` : "none",
+                  color: isSelected ? color : "#94a3b8",
+                  transform: isSelected ? "scale(1.05)" : "scale(1)",
+                }}
+              >
+                {/* Status dot */}
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: color, boxShadow: `0 0 4px ${color}` }}
+                />
+                {/* Tail number */}
+                <span className="font-bold" style={{ color: isSelected ? color : "#e2e8f0" }}>
+                  {ac.tailNumber}
+                </span>
+                {/* Mission */}
+                {ac.currentMission && (
+                  <span style={{ color, opacity: 0.85 }}>{ac.currentMission}</span>
+                )}
+                {/* Status badge */}
+                <span
+                  className="text-[8px] px-1 py-0.5 rounded"
+                  style={{
+                    background: `${color}20`,
+                    color,
+                    border: `1px solid ${color}40`,
+                  }}
+                >
+                  {label}
+                </span>
+                {/* Base */}
+                <span className="text-[8px] opacity-50">{baseName}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

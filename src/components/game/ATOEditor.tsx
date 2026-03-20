@@ -29,6 +29,11 @@ export function ATOEditor({ order, defaultStartHour, availableAircraft, onSave, 
   const [priority, setPriority] = useState<"high" | "medium" | "low">(order?.priority ?? "medium");
   const [day, setDay] = useState(order?.day ?? 1);
   const [selectedAircraftIds, setSelectedAircraftIds] = useState<string[]>([]);
+  const [destinationName, setDestinationName] = useState(order?.destinationName ?? "");
+  const [coordsLat, setCoordsLat] = useState(order?.coords?.lat ?? 57);
+  const [coordsLng, setCoordsLng] = useState(order?.coords?.lng ?? 18);
+  const [missionCallsign, setMissionCallsign] = useState(order?.missionCallsign ?? "");
+  const [fuelOnArrival, setFuelOnArrival] = useState(order?.fuelOnArrival ?? 60);
 
   const filteredAircraft = availableAircraft?.filter(
     (ac) => !aircraftType || ac.type === aircraftType
@@ -43,6 +48,11 @@ export function ATOEditor({ order, defaultStartHour, availableAircraft, onSave, 
   }
 
   const handleSubmit = () => {
+    const finalPayload = payload || undefined;
+    const finalAircraftType = aircraftType || undefined;
+    const finalCoords = destinationName
+      ? { lat: coordsLat, lng: coordsLng }
+      : undefined;
     onSave(
       {
         day,
@@ -51,11 +61,15 @@ export function ATOEditor({ order, defaultStartHour, availableAircraft, onSave, 
         startHour,
         endHour,
         requiredCount,
-        aircraftType: aircraftType || undefined,
-        payload: payload || undefined,
+        aircraftType: finalAircraftType,
+        payload: finalPayload,
         launchBase,
         priority,
         sortiesPerDay: undefined,
+        destinationName: destinationName || undefined,
+        coords: finalCoords,
+        missionCallsign: missionCallsign || undefined,
+        fuelOnArrival: destinationName ? fuelOnArrival : undefined,
       },
       selectedAircraftIds
     );
@@ -205,6 +219,83 @@ export function ATOEditor({ order, defaultStartHour, availableAircraft, onSave, 
               style={fieldStyle}
             />
           </div>
+
+          {/* Divider */}
+          <div className="border-t" style={{ borderColor: "hsl(215 14% 88%)" }} />
+
+          <div className="text-[10px] font-mono font-bold" style={{ color: "hsl(218 15% 45%)" }}>
+            DESTINATION / PLANERING
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-mono font-bold block mb-1" style={{ color: "hsl(218 15% 45%)" }}>MÅLOMRÅDE</label>
+              <input
+                value={destinationName}
+                onChange={(e) => setDestinationName(e.target.value)}
+                placeholder="t.ex. Gotland East"
+                className="w-full px-3 py-2 rounded-lg text-xs font-mono"
+                style={fieldStyle}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-mono font-bold block mb-1" style={{ color: "hsl(218 15% 45%)" }}>CALLSIGN</label>
+              <input
+                value={missionCallsign}
+                onChange={(e) => setMissionCallsign(e.target.value)}
+                placeholder="t.ex. VIPER 1"
+                className="w-full px-3 py-2 rounded-lg text-xs font-mono"
+                style={fieldStyle}
+              />
+            </div>
+          </div>
+
+          {destinationName && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-mono font-bold block mb-1" style={{ color: "hsl(218 15% 45%)" }}>LATITUDE</label>
+                  <input
+                    type="number"
+                    step={0.0001}
+                    min={55}
+                    max={70}
+                    value={coordsLat}
+                    onChange={(e) => setCoordsLat(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-lg text-xs font-mono"
+                    style={fieldStyle}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-mono font-bold block mb-1" style={{ color: "hsl(218 15% 45%)" }}>LONGITUDE</label>
+                  <input
+                    type="number"
+                    step={0.0001}
+                    min={10}
+                    max={30}
+                    value={coordsLng}
+                    onChange={(e) => setCoordsLng(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-lg text-xs font-mono"
+                    style={fieldStyle}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-mono font-bold block mb-1" style={{ color: "hsl(218 15% 45%)" }}>
+                  BRÄNSLE VID ANKOMST <span className="font-normal opacity-60">(%)</span>
+                </label>
+                <input
+                  type="number"
+                  min={10}
+                  max={100}
+                  value={fuelOnArrival}
+                  onChange={(e) => setFuelOnArrival(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-lg text-xs font-mono"
+                  style={fieldStyle}
+                />
+              </div>
+            </>
+          )}
 
           {/* Aircraft selection (only when creating new) */}
           {!order && availableAircraft && (

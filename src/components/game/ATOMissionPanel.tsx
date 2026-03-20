@@ -28,7 +28,27 @@ import {
   MapPin,
   Package,
   Users,
+  Navigation,
 } from "lucide-react";
+import { BASE_COORDS } from "@/pages/map/constants";
+
+// ── Haversine distance in nautical miles ────────────────────────────────────
+function calculateDistanceNM(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number
+): number {
+  const R_NM = 3440.065; // Earth radius in NM
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R_NM * c;
+}
 
 // ── Display constants (mirrored from ATO.tsx) ────────────────────────────────
 
@@ -122,6 +142,11 @@ export function ATOMissionPanel({
   const [formLaunchBase, setFormLaunchBase] = useState<BaseType>(order.launchBase);
   const [formPriority, setFormPriority] = useState<"high" | "medium" | "low">(order.priority);
   const [formDirty, setFormDirty] = useState(false);
+  const [formDestinationName, setFormDestinationName] = useState(order.destinationName ?? "");
+  const [formCoordsLat, setFormCoordsLat] = useState(order.coords?.lat ?? 57);
+  const [formCoordsLng, setFormCoordsLng] = useState(order.coords?.lng ?? 18);
+  const [formMissionCallsign, setFormMissionCallsign] = useState(order.missionCallsign ?? "");
+  const [formFuelOnArrival, setFormFuelOnArrival] = useState(order.fuelOnArrival ?? 60);
 
   // Reset form when switching to a different order
   useEffect(() => {
@@ -136,6 +161,11 @@ export function ATOMissionPanel({
     setFormPriority(order.priority);
     setFormDirty(false);
     setShowDeleteConfirm(false);
+    setFormDestinationName(order.destinationName ?? "");
+    setFormCoordsLat(order.coords?.lat ?? 57);
+    setFormCoordsLng(order.coords?.lng ?? 18);
+    setFormMissionCallsign(order.missionCallsign ?? "");
+    setFormFuelOnArrival(order.fuelOnArrival ?? 60);
   }, [order.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Helper: set a field and mark form dirty
@@ -157,6 +187,10 @@ export function ATOMissionPanel({
       payload: formPayload || undefined,
       launchBase: formLaunchBase,
       priority: formPriority,
+      destinationName: formDestinationName || undefined,
+      coords: formDestinationName ? { lat: formCoordsLat, lng: formCoordsLng } : undefined,
+      missionCallsign: formMissionCallsign || undefined,
+      fuelOnArrival: formDestinationName ? formFuelOnArrival : undefined,
     });
     setFormDirty(false);
     toast.success("Order uppdaterad");
@@ -195,7 +229,7 @@ export function ATOMissionPanel({
               </span>
             )}
           </div>
-          <div className="text-[10px] text-muted-foreground font-mono mt-0.5 flex items-center gap-3">
+          <div className="text-[10px] text-muted-foreground font-mono mt-0.5 flex items-center gap-3 flex-wrap">
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
               {formatHour(order.startHour)}–{formatHour(order.endHour)}
@@ -213,6 +247,35 @@ export function ATOMissionPanel({
                 <Package className="h-3 w-3" />
                 {order.payload}
               </span>
+            )}
+            {order.destinationName && order.coords && (
+              <>
+                <span className="flex items-center gap-1" style={{ color: "hsl(42 64% 53%)" }}>
+                  <Navigation className="h-3 w-3" />
+                  {order.destinationName}
+                </span>
+                <span
+                  className="flex items-center gap-1 font-bold"
+                  style={{ color: "hsl(42 64% 53%)" }}
+                >
+                  {Math.round(
+                    calculateDistanceNM(
+                      BASE_COORDS[order.launchBase]?.lat ?? 0,
+                      BASE_COORDS[order.launchBase]?.lng ?? 0,
+                      order.coords.lat,
+                      order.coords.lng
+                    )
+                  )} NM
+                </span>
+                {order.fuelOnArrival != null && (
+                  <span className="flex items-center gap-1">
+                    <Plane className="h-3 w-3" style={{ color: order.fuelOnArrival < 25 ? "hsl(0 72% 51%)" : "hsl(152 60% 45%)" }} />
+                    <span style={{ color: order.fuelOnArrival < 25 ? "hsl(0 72% 51%)" : "inherit" }}>
+                      {order.fuelOnArrival}%
+                    </span>
+                  </span>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -375,6 +438,80 @@ export function ATOMissionPanel({
                 placeholder="t.ex. IRIS-T + Meteor"
                 className={fieldCls}
               />
+            </div>
+
+            {/* ── Destination / routing ── */}
+            <div
+              className="rounded-lg border p-3 space-y-2"
+              style={{
+                borderColor: formDestinationName ? "hsl(42 64% 53% / 0.5)" : "hsl(215 14% 80%)",
+                background: formDestinationName ? "hsl(42 64% 53% / 0.04)" : "transparent",
+              }}
+            >
+              <div className="text-[10px] font-mono font-bold" style={{ color: "hsl(218 15% 45%)" }}>
+                DESTINATION / PLANERING
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={labelCls}>MÅLOMRÅDE</label>
+                  <input
+                    value={formDestinationName}
+                    onChange={(e) => setField(setFormDestinationName)(e.target.value)}
+                    placeholder="t.ex. Gotland East"
+                    className={fieldCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>CALLSIGN</label>
+                  <input
+                    value={formMissionCallsign}
+                    onChange={(e) => setField(setFormMissionCallsign)(e.target.value)}
+                    placeholder="t.ex. VIPER 1"
+                    className={fieldCls}
+                  />
+                </div>
+              </div>
+              {formDestinationName && (
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className={labelCls}>LAT</label>
+                      <input
+                        type="number"
+                        step={0.0001}
+                        min={55}
+                        max={70}
+                        value={formCoordsLat}
+                        onChange={(e) => setField(setFormCoordsLat)(Number(e.target.value))}
+                        className={fieldCls}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelCls}>LNG</label>
+                      <input
+                        type="number"
+                        step={0.0001}
+                        min={10}
+                        max={30}
+                        value={formCoordsLng}
+                        onChange={(e) => setField(setFormCoordsLng)(Number(e.target.value))}
+                        className={fieldCls}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls}>BRÄNSLE VID ANKOMST (%)</label>
+                    <input
+                      type="number"
+                      min={10}
+                      max={100}
+                      value={formFuelOnArrival}
+                      onChange={(e) => setField(setFormFuelOnArrival)(Number(e.target.value))}
+                      className={fieldCls}
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             {formDirty && (
