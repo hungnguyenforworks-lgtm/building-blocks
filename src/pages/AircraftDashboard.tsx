@@ -20,6 +20,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { RunwayCheckModal } from "@/components/game/RunwayCheckModal";
 import { PILOT_ROSTER } from "@/data/pilotRoster";
 
 // ─── Static rosters (deterministic per tail number) ──────────────────────────
@@ -775,7 +776,7 @@ type DashTab = "oversikt" | "system" | "vapen" | "operationer" | "anmarkningar";
 export default function AircraftDashboard({ embedded = false, aircraftTailNumber }: { embedded?: boolean; aircraftTailNumber?: string } = {}) {
   const { tailNumber: paramTailNumber } = useParams<{ tailNumber: string }>();
   const tailNumber = aircraftTailNumber ?? paramTailNumber;
-  const { state, rebaseAircraft } = useGame();
+  const { state, rebaseAircraft, applyUtfallOutcome, markFaultNMC } = useGame();
   const navigate = useNavigate();
 
   const aircraft = state.bases.flatMap((b) => b.aircraft).find((a) => a.tailNumber === tailNumber);
@@ -785,6 +786,7 @@ export default function AircraftDashboard({ embedded = false, aircraftTailNumber
   const [snagFilter, setSnagFilter] = useState<"all" | "green" | "yellow" | "red">("all");
   const [rebaseOpen, setRebaseOpen] = useState(false);
   const [pendingToBase, setPendingToBase] = useState<BaseType | null>(null);
+  const [pendingRebaseCheck, setPendingRebaseCheck] = useState(false);
 
   if (!aircraft) {
     return (
@@ -813,12 +815,8 @@ export default function AircraftDashboard({ embedded = false, aircraftTailNumber
 
   function handleConfirmRebase() {
     if (!pendingToBase) return;
-    rebaseAircraft(ac.id, ac.currentBase, pendingToBase);
-    const destName = state.bases.find((b) => b.id === pendingToBase)?.name ?? pendingToBase;
-    toast.success(`${ac.tailNumber} ombaserad till ${destName}`);
     setRebaseOpen(false);
-    setPendingToBase(null);
-    if (!embedded) navigate("/");
+    setPendingRebaseCheck(true); // trigger dice roll before launch
   }
   const components    = deriveComponents(ac);
   const subComponents = deriveSubComponents(ac);
@@ -1552,6 +1550,39 @@ export default function AircraftDashboard({ embedded = false, aircraftTailNumber
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── REBASE RUNWAY CHECK MODAL (dice roll) ── */}
+      {pendingRebaseCheck && (() => {
+        const currentBase = state.bases.find((b) => b.id === ac.currentBase);
+        if (!currentBase) return null;
+        return (
+          <RunwayCheckModal
+            aircraft={ac}
+            maintenanceBays={currentBase.maintenanceBays}
+            onMission={() => {
+              rebaseAircraft(ac.id, ac.currentBase, pendingToBase!);
+              const destName = state.bases.find((b) => b.id === pendingToBase)?.name ?? pendingToBase;
+              toast.success(`${ac.tailNumber} ombaserad till ${destName}`);
+              setPendingRebaseCheck(false);
+              setPendingToBase(null);
+              if (!embedded) navigate("/");
+            }}
+            onMaintenance={(repairTime, typeKey, weaponLoss, label, requiredSparePart) => {
+              applyUtfallOutcome(ac.currentBase, ac.id, repairTime, typeKey, weaponLoss, label, requiredSparePart);
+              setPendingRebaseCheck(false);
+              setPendingToBase(null);
+              toast.error(`${ac.tailNumber} → Service: ${label} (${repairTime}h)`);
+            }}
+            onIgnoreFault={(repairTime, typeKey, actionLabel, requiredSparePart) => {
+              markFaultNMC(ac.currentBase, ac.id, repairTime, typeKey, actionLabel, requiredSparePart);
+              setPendingRebaseCheck(false);
+              setPendingToBase(null);
+              toast.warning(`🔴 ${ac.tailNumber} NMC — fel ignorerat, ej i hangar`);
+            }}
+            onClose={() => { setPendingRebaseCheck(false); setPendingToBase(null); }}
+          />
+        );
+      })()}
 
       {/* ── REBASE DIALOG ── */}
       <Dialog open={rebaseOpen} onOpenChange={setRebaseOpen}>
