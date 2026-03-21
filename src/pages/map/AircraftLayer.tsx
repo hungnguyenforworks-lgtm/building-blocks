@@ -190,7 +190,7 @@ export function AircraftLayer({
         ctx.beginPath();
         ctx.moveTo(projected[i].x, projected[i].y);
         ctx.lineTo(projected[i + 1].x, projected[i + 1].y);
-        ctx.strokeStyle = `rgba(34, 211, 238, ${opacity})`;
+        ctx.strokeStyle = `rgba(34, 197, 94, ${opacity})`;
         ctx.stroke();
       }
     }
