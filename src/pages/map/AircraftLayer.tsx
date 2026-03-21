@@ -7,6 +7,7 @@ import gripenSilhouette from "@/assets/gripen-silhouette.png";
 const REBASE_TRANSIT_HOURS = 2;
 const TRAIL_POINTS = 80;
 const TRAIL_SPAN = 8;
+const REBASE_TRAIL_SPAN = 3;
 const REBASE_VISUAL_PERIOD = 200;
 
 interface AircraftPosition {
@@ -90,7 +91,7 @@ export function AircraftLayer({
           // i=0 = current position (bright), i increases = past positions (dim).
           const points: TrailPoint[] = [];
           for (let i = 0; i < TRAIL_POINTS; i++) {
-            const t = (i / (TRAIL_POINTS - 1)) * TRAIL_SPAN;
+            const t = (i / (TRAIL_POINTS - 1)) * REBASE_TRAIL_SPAN;
             const trailProgress = progress - t / REBASE_VISUAL_PERIOD;
             if (trailProgress <= 0) break;
             points.push({
